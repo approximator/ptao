@@ -1,5 +1,6 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
+.pytest_cache/
 *.py[cod]
 *$py.class
 
@@ -15,8 +16,6 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
 parts/
 sdist/
 var/
@@ -87,11 +86,11 @@ celerybeat-schedule
 venv/
 ENV/
 
-# Spyder project settings
+# project settings
+.idea
+.vscode
 .spyderproject
 .spyproject
-
-# Rope project settings
 .ropeproject
 
 # mkdocs documentation
