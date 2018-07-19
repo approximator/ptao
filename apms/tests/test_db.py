@@ -16,6 +16,7 @@ from sqlalchemy.orm import relationship
 session_factory = make_session_factory('sqlite:////tmp/test.sqlite')
 BASE.metadata.create_all(session_factory.engine)
 
+
 def test_users_add():
     session = session_factory.make_session()
     user = user = User(
@@ -23,7 +24,6 @@ def test_users_add():
         last_name='Lm',
         url='url',
         date_added=datetime.datetime.now(),
-        date_info_updated=datetime.datetime.now()
-    )
+        date_info_updated=datetime.datetime.now())
     session.add(user)
     session.commit()

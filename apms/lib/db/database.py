@@ -19,7 +19,7 @@ limitations under the License.
 from time import mktime
 
 from sqlalchemy import Column, Integer, UnicodeText, DateTime, Boolean, ForeignKey, Table
-from sqlalchemy.ext.declarative import declarative_base
+from tornado_sqlalchemy import declarative_base
 from sqlalchemy.orm import relationship
 
 # pylint: disable=too-many-instance-attributes,invalid-name
