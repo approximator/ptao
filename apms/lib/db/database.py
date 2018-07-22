@@ -51,6 +51,13 @@ def obj_to_json(obj):
     return data
 
 
+class Settings(BASE):
+    __tablename__ = 'status_and_settings'
+
+    id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
+    pause_update = Column(Boolean(), nullable=False, default=False)
+
+
 class Tag(BASE):
     __tablename__ = 'tags'
     id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
