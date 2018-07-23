@@ -36,13 +36,17 @@ class AmpsConfig:
         apms_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
         config_file_name = os.path.join(apms_dir, 'config.yml')
         log.info('Loading config from {}'.format(config_file_name))
-        config = yaml.load(open(config_file_name, 'r'))
+        self._config = yaml.load(open(config_file_name, 'r'))
 
-        self._static_dir = os.path.realpath(os.path.join(apms_dir, config['server']['static_dir']))
-        self._photos_dir = os.path.realpath(os.path.join(apms_dir, config['server']['photos_dir']))
-        self._db_connection_string = config['server']['db_connection_string']
+        self._static_dir = os.path.realpath(os.path.join(apms_dir, self._config['server']['static_dir']))
+        self._photos_dir = os.path.realpath(os.path.join(apms_dir, self._config['server']['photos_dir']))
+        self._db_connection_string = self._config['server']['db_connection_string']
         log.info('Static dir: {}'.format(self._static_dir))
         log.info('Photos dir: {}'.format(self._photos_dir))
+
+    @property
+    def raw_data(self):
+        return self._config
 
     @property
     def static_dir(self):
@@ -51,6 +55,10 @@ class AmpsConfig:
     @property
     def photos_dir(self):
         return self._photos_dir
+
+    @property
+    def trash_dir(self):
+        return '/tmp/apms/photos_to_delete'
 
     @property
     def db_connection_string(self):
