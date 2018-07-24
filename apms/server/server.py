@@ -72,6 +72,20 @@ class NonCachedStaticFileHandler(StaticFileHandler):
         self.set_header('Expires', '0')
 
 
+class UsersHandler(RequestHandler, SessionMixin):
+
+    def get(self, *args, **kwargs):
+        with self.make_session() as session:
+            users = {
+                'users':
+                list(
+                    map(lambda user: user.to_json(),
+                        session.query(User).order_by(User.date_photos_updated_successfully).all()))
+            }
+            self.set_header('Content-Type', 'application/json')
+            self.write(json.dumps(users))
+
+
 class ApmsServer:
 
     def __init__(self):
@@ -88,6 +102,20 @@ class ApmsServer:
                 }),
             ],
             session_factory=self._session_factory).listen(7777)
+        self._app = Application([
+            (r"/api/photos", PhotosHandler),
+            (r"/api/users", UsersHandler),
+            (r'/photos(.*)', MainHandler),
+            (r'/people(.*)', MainHandler),
+            (r'/files/photos/(.*)', NonCachedStaticFileHandler, {
+                'path': config.photos_dir
+            }),
+            (r'/', MainHandler),
+            (r'/(.*)', NonCachedStaticFileHandler, {
+                'path': config.static_dir
+            }),
+        ],
+                                session_factory=self._session_factory).listen(7777, '127.0.0.1')
 
     def run(self):
         IOLoop.current().start()
