@@ -20,39 +20,44 @@ import os
 import json
 import shutil
 import logging
-import datetime
 
 import tornado
-from tornado_sqlalchemy import make_session_factory, SessionMixin
-from sqlalchemy.orm import joinedload
-from sqlalchemy import or_, and_, not_
 from tornado.web import RequestHandler, Application, StaticFileHandler
+from sqlalchemy.orm import joinedload
+from sqlalchemy import not_
+from tornado_sqlalchemy import make_session_factory, SessionMixin
 
-from apms.lib.db.database import Photo, User, Album
+from apms.lib.db.database import Photo, User
 from apms.lib.config import config
+from .updater import Updater
 
 log = logging.getLogger(__name__)  # pylint: disable=invalid-name
 logging.getLogger('tornado').setLevel(logging.WARNING)
 
+# pylint: disable=abstract-method
+
 
 class PhotosHandler(RequestHandler, SessionMixin):
+    """
+    Handler for API methods of photos functions
+    """
 
-    def get(self, *args, **kwargs):
+    def get(self, *args, **kwargs):  # pylint: disable=too-many-locals
         page = int(self.get_query_argument('page', 1))
         limit = int(self.get_query_argument('limit', 200))
         offset = (page - 1) * limit
         owner_id = self.get_query_argument('owner_id', None)
-        sort_by = self.get_query_argument('sort_by', None)
+        # sort_by = self.get_query_argument('sort_by', None)
         missing = self.get_query_argument('missing', None)
         to_delete = self.get_query_argument('to_delete', None)
-        foreign = self.get_query_argument('foreign', None)
+        # foreign = self.get_query_argument('foreign', None)
         small = self.get_query_argument('small', None)
 
         with self.make_session() as session:
             if to_delete is not None:
-                count, result = self.get_photos_to_delete(session)
+                count, result = PhotosHandler.get_photos_to_delete(session)
             elif missing is not None:
-                count, result = self.get_missing_photos(session)
+                count, result = PhotosHandler.get_missing_photos(session)
             else:
                 query = session.query(Photo).options(joinedload(Photo.owner)).filter(not_(Photo.deleted_by_me))
                 if owner_id:
@@ -67,14 +72,16 @@ class PhotosHandler(RequestHandler, SessionMixin):
             self.set_header('Content-Type', 'application/json')
             self.write(json.dumps(photos))
 
-    def get_missing_photos(self, session):
+    @staticmethod
+    def get_missing_photos(session):
         query = session.query(Photo).options(joinedload(Photo.owner)).filter_by(deleted_by_me=False)
         result = list(
             filter(lambda photo: not os.path.exists(os.path.join(config.photos_dir, photo.dir_name, photo.file_name)),
                    query.order_by(Photo.date_added.desc()).all()))
         return len(result), result[0:200]
 
-    def get_photos_to_delete(self, session):
+    @staticmethod
+    def get_photos_to_delete(session):
         query = session.query(Photo).options(joinedload(Photo.owner)).filter_by(deleted_by_me=True)
         result = list(
             filter(lambda photo: os.path.exists(os.path.join(config.photos_dir, photo.dir_name, photo.file_name)),
@@ -84,7 +91,7 @@ class PhotosHandler(RequestHandler, SessionMixin):
     def delete(self, *args, **kwargs):
         try:
             photos_to_delete = json.loads(self.request.body.decode())['photos']
-        except Exception as ex:
+        except Exception as ex:  # pylint: disable=broad-except
             log.info(ex)
             self.set_status(400)
             self.write(json.dumps({'result': 'Error', 'cause': 'Wrong request', 'description': str(ex)}))
@@ -151,20 +158,23 @@ class ApmsServer:
 
     def __init__(self):
         self._session_factory = make_session_factory(config.db_connection_string)
-        self._app = Application([
-            (r"/api/photos", PhotosHandler),
-            (r"/api/users", UsersHandler),
-            (r'/photos(.*)', MainHandler),
-            (r'/people(.*)', MainHandler),
-            (r'/files/photos/(.*)', NonCachedStaticFileHandler, {
-                'path': config.photos_dir
-            }),
-            (r'/', MainHandler),
-            (r'/(.*)', NonCachedStaticFileHandler, {
-                'path': config.static_dir
-            }),
-        ],
-                                session_factory=self._session_factory).listen(7777, '127.0.0.1')
+        self._updater = Updater(config, self._session_factory)
+        self._app = Application(
+            [
+                (r"/api/photos", PhotosHandler),
+                (r"/api/users", UsersHandler),
+                (r'/photos(.*)', MainHandler),
+                (r'/people(.*)', MainHandler),
+                (r'/files/photos/(.*)', NonCachedStaticFileHandler, {
+                    'path': config.photos_dir
+                }),
+                (r'/', MainHandler),
+                (r'/(.*)', NonCachedStaticFileHandler, {
+                    'path': config.static_dir
+                }),
+            ],
+            session_factory=self._session_factory).listen(7777)
 
     def run(self):
+        tornado.ioloop.IOLoop.current().spawn_callback(self._updater.update_photos_of_next_user)
         tornado.ioloop.IOLoop.current().start()

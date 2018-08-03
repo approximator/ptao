@@ -1,10 +1,7 @@
 pyyaml
-requests
 sqlalchemy
 tornado-sqlalchemy
-psycopg2
 tornado
-jsondiff
 python-dateutil
 pillow
 boto3
@@ -12,3 +9,6 @@ pytest
 pylint
 yapf
 alembic
+aiohttp
+aiodns
+aiofiles

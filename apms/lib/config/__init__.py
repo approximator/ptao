@@ -65,4 +65,4 @@ class AmpsConfig:
         return self._db_connection_string
 
 
-config = AmpsConfig()
+config = AmpsConfig()  # pylint: disable=invalid-name
