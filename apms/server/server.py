@@ -44,7 +44,7 @@ class PhotosHandler(RequestHandler, SessionMixin):
 
     def get(self, *args, **kwargs):  # pylint: disable=too-many-locals
         page = int(self.get_query_argument('page', 1))
-        limit = int(self.get_query_argument('limit', 200))
+        limit = int(self.get_query_argument('elements_per_page', 200))
         offset = (page - 1) * limit
         owner_id = self.get_query_argument('owner_id', None)
         # sort_by = self.get_query_argument('sort_by', None)

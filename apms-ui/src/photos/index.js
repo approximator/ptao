@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Button } from 'semantic-ui-react'
+import { Button, Menu, Pagination } from 'semantic-ui-react'
 import Gallery from 'react-grid-gallery';
 import KeyboardEventHandler from 'react-keyboard-event-handler';
 
@@ -10,30 +10,59 @@ class PhotosPage extends Component {
         currentImage: 0,
         lightboxOpened: false,
         totalPhotosCount: undefined,
+        totalPages: undefined,
+        currentPage: 1,
+        photosPerPage: 200,
         shiftPressed: false
     }
 
     constructor(props) {
         super(props)
 
+        this.onPaginationChange = this.onPaginationChange.bind(this);
         this.onCurrentImageChange = this.onCurrentImageChange.bind(this);
         this.onSelectImage = this.onSelectImage.bind(this);
     }
 
-    componentDidMount() {
-        this.fetchPhotos()
+    componentWillReceiveProps(newProps) {
+        if (newProps.location.search != this.props.location.search) {
+            this.fetchPhotos(newProps.location.search);
+        }
     }
 
-    fetchPhotos() {
-        const params = new URLSearchParams(this.props.location.search);
-        const url = '/api/photos' + this.props.location.search
+    componentDidMount() {
+        this.fetchPhotos(this.props.location.search)
+    }
+
+    fetchPhotos(searchParams) {
+        let params = new URLSearchParams(searchParams);
+        const page = params.has("page") ? parseInt(params.get('page')) : 1;
+        const photosPerPage = params.has("elements_per_page") ? parseInt(params.get('elements_per_page')) : 200;
+        params.set('page', page);
+        params.set('elements_per_page', photosPerPage);
+        const url = '/api/photos?' + params.toString()
         console.log('Requesting: ' + url)
         fetch(url)
             .then(res => res.json())
             .then(data => {
                 console.log(data);
-                this.setState({ photos: data.photos.map(photo => this.createImgObj(params.has("missing"), photo)) });
+                this.setState({
+                    photos: data.photos.map(photo => this.createImgObj(params.has("missing"), photo)),
+                    totalPhotosCount: data['count'],
+                    totalPages: Math.ceil(Number(data['count']) / photosPerPage)
+                });
             })
+        this.setState({
+            currentPage: parseInt(params.get('page')),
+            photosPerPage: photosPerPage
+        })
+    }
+
+    onPaginationChange(e, { activePage }) {
+        let params = new URLSearchParams(this.props.location.search);
+        params.set('page', activePage)
+        this.props.history.push(`?${params.toString()}`);
+        console.log(`Current page ${activePage}`)
     }
 
     onClickSelectAll () {
@@ -113,13 +142,21 @@ class PhotosPage extends Component {
 
         return (
             <div>
-                <Button compact toggle active={this.state.selectAllChecked} onClick={() => this.onClickSelectAll()}>
-                    Select All
-                </Button>
+                <Menu className="secondaryTopMenu" fixed='top' inverted>
+                    <Button compact toggle active={this.state.selectAllChecked} onClick={() => this.onClickSelectAll()}>
+                        Select All
+                    </Button>
 
-                <Button compact negative onClick={() => this.removeSelectedImages()}>
-                    Remove
-                </Button>
+                    <Button compact negative onClick={() => this.removeSelectedImages()}>
+                        Remove
+                    </Button>
+
+                    <Pagination inverted
+                        activePage={this.state.currentPage}
+                        onPageChange={this.onPaginationChange}
+                        totalPages={this.state.totalPages}
+                    />
+                </Menu>
 
                 <Gallery
                     images={photos}
