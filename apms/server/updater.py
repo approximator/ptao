@@ -176,6 +176,7 @@ class Updater:
             log.info('New photos: {}'.format(new_photos_count))
             downloaded = 0
             for new_photo in new_photos:
+                new_photo.owner_id = user.id
                 downloaded += 1
                 log.info('Downloading photo {} of {}'.format(downloaded, new_photos_count))
                 await self.download_photo(new_photo, new_photo.url)
