@@ -1,32 +1,25 @@
-# -*- coding: utf-8 -*-
+"""Added 'pause_update' field
+
+Revision ID: add6265f2306
+Revises: 8abc70088073
+Create Date: 2018-09-25 18:12:53.872002
+
 """
-Copyright © 2018 Approximator. All rights reserverd.
-Author: Approximator (alex@nls.la)
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-     http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-"""
-
-from time import mktime
+from alembic import op
+import sqlalchemy as sa
 
 from sqlalchemy import Column, Integer, UnicodeText, DateTime, Boolean, ForeignKey, Table
-from sqlalchemy.orm import relationship
-from tornado_sqlalchemy import declarative_base
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship, sessionmaker
 
-# logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
-
-# pylint: disable=too-many-instance-attributes,too-few-public-methods,invalid-name
+# revision identifiers, used by Alembic.
+revision = 'add6265f2306'
+down_revision = '8abc70088073'
+branch_labels = None
+depends_on = None
 
 BASE = declarative_base()
+Session = sessionmaker()
 
 photos_tags = Table('__photos_tags__', BASE.metadata, Column('photo_id', ForeignKey('photos.id'), primary_key=True),
                     Column('tag_id', ForeignKey('tags.id'), primary_key=True))
@@ -166,3 +159,88 @@ class User(BASE):
 
     def __repr__(self):
         return 'User({} {})'.format(self.first_name, self.last_name)
+
+
+class OldUser(BASE):
+    __tablename__ = 'old_users'
+    id = Column(Integer, nullable=False, primary_key=True, autoincrement=True)
+    kind = Column(Integer, nullable=False, default=0)  # 0 - user, 1 - group
+    first_name = Column(UnicodeText(), nullable=False, default='')
+    last_name = Column(UnicodeText(), nullable=False, default='')
+    domain = Column(UnicodeText(), nullable=True)
+    nick_name = Column(UnicodeText(), nullable=True, default='')
+    site = Column(UnicodeText(), nullable=True)
+    status_str = Column(UnicodeText(), nullable=True)
+    about = Column(UnicodeText(), nullable=True)
+    date_birthday = Column(DateTime(), nullable=True)
+    city = Column(UnicodeText(), nullable=True)
+    date_added = Column(DateTime(), nullable=False)
+    date_info_updated = Column(DateTime(), nullable=True)
+    date_photos_updated = Column(DateTime(), nullable=True)
+    date_info_updated_successfully = Column(DateTime(), nullable=True)
+    date_photos_updated_successfully = Column(DateTime(), nullable=True)
+    deleted = Column(Boolean(), nullable=False, default=False)
+    deleted_by_me = Column(Boolean(), nullable=False, default=False)
+    url = Column(UnicodeText(), nullable=False)
+    updating = Column(Boolean(), nullable=False, default=False)
+    updating_interval = Column(Integer, nullable=False, default=60)
+    rating = Column(Integer, nullable=False, default=0)
+    sex = Column(Integer, nullable=False, default=5)
+    photo = Column(UnicodeText(), nullable=False, default='')
+    mobile_phone = Column(UnicodeText(), nullable=True)
+    filter_by_albums = Column(UnicodeText(), nullable=True)
+
+    # albums = relationship('Album', back_populates='owner')
+    # photos = relationship('Photo', back_populates='owner')
+    # photos_of = relationship('Photo', secondary=photos_people, back_populates='peoples')
+
+    def to_json(self):
+        return obj_to_json(self)
+
+    def __repr__(self):
+        return 'User({} {})'.format(self.first_name, self.last_name)
+
+
+def upgrade():
+    op.rename_table('users', 'old_users')
+
+    bind = op.get_bind()
+    session = Session(bind=bind)
+
+    # create the tables
+    User.__table__.create(bind)
+
+    for old_user in session.query(OldUser).all():
+        user = User(
+            id=old_user.id,
+            first_name=old_user.first_name,
+            last_name=old_user.last_name,
+            domain=old_user.domain,
+            nick_name=old_user.nick_name,
+            site=old_user.site,
+            status_str=old_user.status_str,
+            about=old_user.about,
+            date_birthday=old_user.date_birthday,
+            city=old_user.city,
+            date_added=old_user.date_added,
+            date_info_updated=old_user.date_info_updated,
+            date_photos_updated=old_user.date_photos_updated,
+            date_info_updated_successfully=old_user.date_info_updated_successfully,
+            date_photos_updated_successfully=old_user.date_photos_updated_successfully,
+            deleted=old_user.deleted,
+            deleted_by_me=old_user.deleted_by_me,
+            url=old_user.url,
+            updating=old_user.updating,
+            updating_interval=old_user.updating_interval,
+            rating=old_user.rating,
+            sex=old_user.sex,
+            photo=old_user.photo,
+            mobile_phone=old_user.mobile_phone,
+            filter_by_albums=old_user.filter_by_albums)
+        session.add(user)
+    session.commit()
+    op.drop_table('old_users')
+
+
+def downgrade():
+    pass

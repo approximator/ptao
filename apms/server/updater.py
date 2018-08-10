@@ -25,7 +25,7 @@ import aiofiles
 import aiohttp
 
 from PIL import Image
-from sqlalchemy import or_  # , and_, not_
+from sqlalchemy import or_, and_, not_
 
 from ..lib.db.database import Photo, User
 from ..lib.providers.pd.pdmanager import PDManager
@@ -116,9 +116,10 @@ class Updater:
             since = datetime.datetime.now() - onedayearly
 
             session = self._session_factory.make_session()
-            user = session.query(User).filter(or_(User.date_photos_updated < since,
-                                                  User.date_photos_updated == None)).order_by(  # pylint: disable=singleton-comparison
-                                                      User.date_photos_updated).first()
+            user = session.query(User).filter(
+                and_(or_(User.date_photos_updated < since, User.date_photos_updated == None),
+                     not_(User.pause_update))).order_by(  # pylint: disable=singleton-comparison
+                         User.date_photos_updated).first()
 
             if user is None:
                 log.info('No users to update')
