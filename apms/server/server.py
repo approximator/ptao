@@ -154,26 +154,56 @@ class UsersHandler(RequestHandler, SessionMixin):
             self.write(json.dumps(users))
 
 
+
+
+class PeopleTagHandler(RequestHandler, SessionMixin):
+
+    async def put(self):
+        try:
+            params = json.loads(self.request.body.decode())
+            log.info(json.dumps(params, indent=4))
+            overwrite_tags = bool(params.get('overwriteTags', False))
+            people_ids = list(map(int, params['people']))
+            photos_ids = list(map(int, params['photos']))
+        except Exception as ex:  # pylint: disable=broad-except
+            log.info(ex)
+            self.set_status(400)
+            self.write(json.dumps({'result': 'Error', 'cause': 'Wrong request', 'description': str(ex)}))
+            return
+
+        with self.make_session() as session:
+            people = session.query(User).filter(User.id.in_(people_ids)).all()
+            log.info(list(map(lambda user: user.to_json(), people)))
+            for photo in session.query(Photo).filter(Photo.id.in_(photos_ids)).all():
+                if not overwrite_tags:
+                    people.extend(photo.peoples)
+                    photo.peoples = list(set(people))  # remove duplicates
+                else:
+                    log.info('Overwriting tags')
+                    photo.peoples = people
+            session.commit()
+        self.write(json.dumps({'result': 'Success'}))
 class ApmsServer:
 
     def __init__(self):
         self._session_factory = make_session_factory(config.db_connection_string)
         self._updater = Updater(config, self._session_factory)
-        self._app = Application(
-            [
-                (r"/api/photos", PhotosHandler),
-                (r"/api/users", UsersHandler),
-                (r'/photos(.*)', MainHandler),
-                (r'/people(.*)', MainHandler),
-                (r'/files/photos/(.*)', NonCachedStaticFileHandler, {
-                    'path': config.photos_dir
-                }),
-                (r'/', MainHandler),
-                (r'/(.*)', NonCachedStaticFileHandler, {
-                    'path': config.static_dir
-                }),
-            ],
-            session_factory=self._session_factory).listen(7777)
+        self._app = Application([
+            (r"/api/photos", PhotosHandler),
+            (r"/api/photos/tagPeople", PeopleTagHandler),
+            (r"/api/users/(.+)/update", UsersUpdateHandler),
+            (r"/api/users", UsersHandler),
+            (r'/photos(.*)', MainHandler),
+            (r'/people(.*)', MainHandler),
+            (r'/files/photos/(.*)', NonCachedStaticFileHandler, {
+                'path': config.photos_dir
+            }),
+            (r'/', MainHandler),
+            (r'/(.*)', NonCachedStaticFileHandler, {
+                'path': config.static_dir
+            }),
+        ],
+                                session_factory=self._session_factory).listen(7777, '127.0.0.1')
 
     def run(self):
         tornado.ioloop.IOLoop.current().spawn_callback(self._updater.update_photos_of_next_user)

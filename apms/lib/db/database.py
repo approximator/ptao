@@ -22,6 +22,7 @@ from sqlalchemy import Column, Integer, UnicodeText, DateTime, Boolean, ForeignK
 from sqlalchemy.orm import relationship
 from tornado_sqlalchemy import declarative_base
 
+# import logging
 # logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
 
 # pylint: disable=too-many-instance-attributes,too-few-public-methods,invalid-name
@@ -124,6 +125,7 @@ class Photo(BASE):
         data = obj_to_json(self)
         data['local_url'] = '/files/photos/' + self.dir_name + '/' + self.file_name
         data['owner'] = self.owner.to_json() if self.owner else {}
+        data['people'] = list(map(lambda user: user.to_json(), self.peoples)) if self.peoples else []
         return data
 
 
@@ -166,3 +168,6 @@ class User(BASE):
 
     def __repr__(self):
         return 'User({} {})'.format(self.first_name, self.last_name)
+
+    # def __eq__(self, other):
+    #     return self.id == other.id

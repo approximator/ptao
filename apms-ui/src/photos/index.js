@@ -1,7 +1,9 @@
 import React, { Component } from 'react';
-import { Button, Menu, Pagination } from 'semantic-ui-react'
+import { Button, Label, Icon, Menu, Pagination } from 'semantic-ui-react'
 import Gallery from 'react-grid-gallery';
 import KeyboardEventHandler from 'react-keyboard-event-handler';
+import TagPeopleDialog from './tag_people_dialog';
+import TagPeopleDialog from './tag-people';
 
 class PhotosPage extends Component {
 
@@ -13,7 +15,10 @@ class PhotosPage extends Component {
         totalPages: undefined,
         currentPage: 1,
         photosPerPage: 200,
-        shiftPressed: false
+        shiftPressed: false,
+
+        tagPeopleModalOpened: false,
+        selectedImages: []
     }
 
     constructor(props) {
@@ -51,6 +56,10 @@ class PhotosPage extends Component {
                     totalPhotosCount: data['count'],
                     totalPages: Math.ceil(Number(data['count']) / photosPerPage)
                 });
+                window.scrollTo({
+                    top: 0,
+                    behavior: "smooth"
+                });
             })
         this.setState({
             currentPage: parseInt(params.get('page')),
@@ -65,7 +74,7 @@ class PhotosPage extends Component {
         console.log(`Current page ${activePage}`)
     }
 
-    onClickSelectAll () {
+    onClickSelectAll() {
         let photos = this.state.photos.slice();
         const isAllSelected = photos.filter(photo => photo.isSelected === true).length === photos.length
 
@@ -97,11 +106,15 @@ class PhotosPage extends Component {
         return {
             id: photo.id,
             owner_id: photo.owner_id,
+            onwer_name: photo.owner.first_name + ' ' + photo.owner.last_name,
             src: is_missing ? photo.url : photo.local_url,
             thumbnail: is_missing ? photo.url : photo.local_url,
-            caption: photo.owner.first_name + ' ' + photo.owner.last_name,
+            caption: photo.text,
             thumbnailWidth: photo.width,
-            thumbnailHeight: photo.height
+            thumbnailHeight: photo.height,
+            tags: photo.people.map(user => {
+                return { value: user.first_name + ' ' + user.last_name, title: user.first_name + ' ' + user.last_name }
+            })
         }
     }
 
@@ -113,7 +126,7 @@ class PhotosPage extends Component {
 
         const options = {
             method: 'delete',
-            headers: {'Content-type': 'application/json; charset=UTF-8'},
+            headers: { 'Content-type': 'application/json; charset=UTF-8' },
             body: JSON.stringify(data)
         }
 
@@ -131,31 +144,57 @@ class PhotosPage extends Component {
         this.removeImages(selectedImgs)
     }
 
+    goToAuthor(owner_id) {
+        let params = new URLSearchParams(this.props.location.search);
+        params.set('owner_id', owner_id);
+        params.set('page', 1);
+        this.props.history.push(`?${params.toString()}`);
+    }
+
     render() {
         var photos = this.state.photos.map((i) => {
             i.customOverlay = (
                 <div style={captionStyle}>
-                    <div>{i.caption}</div>
+                    <Label as='a' style={{ pointerEvents: "auto" }} onClick={() => {
+                        this.goToAuthor(i.owner_id);
+                    }}>
+                        <Icon name='user' /> {i.onwer_name}
+                    </Label>
                 </div>);
             return i;
         });
 
         return (
             <div>
-                <Menu className="secondaryTopMenu" fixed='top' inverted>
+                <Menu className="secondaryTopMenu" fixed='bottom' inverted>
                     <Button compact toggle active={this.state.selectAllChecked} onClick={() => this.onClickSelectAll()}>
                         Select All
                     </Button>
 
-                    <Button compact negative onClick={() => this.removeSelectedImages()}>
-                        Remove
-                    </Button>
-
                     <Pagination inverted
+                        showEllipsis={false}
+                        showFirstAndLastNav={false}
+                        boundaryRange={4}
+                        siblingRange={1}
                         activePage={this.state.currentPage}
                         onPageChange={this.onPaginationChange}
                         totalPages={this.state.totalPages}
                     />
+
+                    <TagPeopleDialog
+                        modalOpen={this.state.tagPeopleModalOpened}
+                        photos={this.state.selectedImages}
+                    />
+                    <Button compact onClick={() => {
+                        const selectedImgs = this.getSelectedImages().slice();
+                        this.setState({
+                            tagPeopleModalOpened: true,
+                            selectedImages: selectedImgs
+                        })
+                        console.log(`selected images: ${selectedImgs}`)
+                    }}>
+                        Tag People
+                    </Button>
                 </Menu>
 
                 <Gallery
@@ -163,15 +202,10 @@ class PhotosPage extends Component {
                     rowHeight={250}
                     onSelectImage={this.onSelectImage}
                     currentImageWillChange={this.onCurrentImageChange}
-                    lightboxWillOpen={() => this.setState({lightboxOpened: true})}
-                    lightboxWillClose={() => this.setState({lightboxOpened: false})}
+                    lightboxWillOpen={() => this.setState({ lightboxOpened: true })}
+                    lightboxWillClose={() => this.setState({ lightboxOpened: false })}
 
                     customControls={[
-                        <Button icon='images' onClick={() => {
-                            const searchParams = new URLSearchParams();
-                            searchParams.set("owner_id", this.state.photos[this.state.currentImage].owner_id);
-                            window.location.href = `/photos/?${searchParams.toString()}`;
-                        }}/>
                     ]}
                 />
 
@@ -179,8 +213,9 @@ class PhotosPage extends Component {
                     handleKeys={['del', 'shift']}
                     onKeyEvent={(key, e) => {
                         if (key === "del") {
+                            console.log(`del key. Lightbox opened: ${this.state.lightboxOpened}`)
                             if (this.state.lightboxOpened) {
-                                this.removeImages([this.state.photos[this.state.currentImage].id]);
+                                this.removeImages([this.state.photos[this.state.currentImage]]);
                             } else {
                                 this.removeSelectedImages();
                             }
@@ -194,15 +229,13 @@ class PhotosPage extends Component {
 }
 
 const captionStyle = {
-    backgroundColor: "rgba(0, 0, 0, 0.8)",
-    maxHeight: "240px",
+    backgroundColor: "rgba(0, 0, 0, 0.2)",
     overflow: "hidden",
     position: "absolute",
     bottom: "0",
     width: "100%",
     color: "white",
-    padding: "2px",
-    fontSize: "90%"
+    padding: "2px"
 };
 
 export default PhotosPage;
