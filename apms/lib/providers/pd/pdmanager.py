@@ -3,6 +3,7 @@ import time
 import json
 import logging
 import asyncio
+import aiohttp
 
 from .api import PDApi
 
@@ -23,6 +24,27 @@ class PDManager:
             v=settings['version'],
             https=1,
             lang=settings['lang'])
+
+    async def get_kind(self, screen_name):
+        if screen_name.startswith('id'):
+            try:
+                _ = int(screen_name[2:])
+                return 0  # user
+            except ValueError:
+                pass
+        resp = await self._api.utils.resolveScreenName(screen_name=screen_name)
+        log.debug(json.dumps(resp, indent=4))
+        try:
+            if resp['response']['type'] == 'user':
+                return 0
+            if resp['response']['type'] == 'group':
+                return 1
+        except KeyError:
+            return None
+        except TypeError:
+            return 0
+
+        return None
 
     async def get_user_info(self, user_id):
         resp = await self._api.users.get(user_ids=user_id, fields=self._info_fields, name_case='Nom')
@@ -71,7 +93,7 @@ class PDManager:
         for _ in range(tries):
             try:
                 res = await func()
-            except Exception as ex:
+            except aiohttp.ClientError as ex:
                 log.error('{} {}.   retrying'.format(type(ex), ex))
                 await asyncio.sleep(5)
                 continue  # retrying
