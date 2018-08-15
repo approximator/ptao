@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import { Button, Label, Icon, Menu, Pagination } from 'semantic-ui-react'
 import Gallery from 'react-grid-gallery';
 import KeyboardEventHandler from 'react-keyboard-event-handler';
-import TagPeopleDialog from './tag_people_dialog';
+import UserInfo from '../people/user-info';
 import TagPeopleDialog from './tag-people';
 
 class PhotosPage extends Component {
@@ -109,6 +109,7 @@ class PhotosPage extends Component {
             onwer_name: photo.owner.first_name + ' ' + photo.owner.last_name,
             src: is_missing ? photo.url : photo.local_url,
             thumbnail: is_missing ? photo.url : photo.local_url,
+            text: photo.text,
             caption: photo.text,
             thumbnailWidth: photo.width,
             thumbnailHeight: photo.height,
@@ -151,17 +152,31 @@ class PhotosPage extends Component {
         this.props.history.push(`?${params.toString()}`);
     }
 
+    linksFromDescription(description) {
+        if (description === undefined) {
+            return;
+        }
+
+        const matches = description.match(/\[(id\d+)(.*?)\]/gmi);
+        if (!matches) {
+            return;
+        }
+        const links  = matches.map(match => match.substring(1, match.length-1).split('|'));
+        return links.map(link =>
+            <a href={`https://vk.com/${link[0]}`} style={linkStyle} >{link[1]}</a>
+        )
+    }
+
     render() {
-        var photos = this.state.photos.map((i) => {
-            i.customOverlay = (
+        var photos = this.state.photos.map(photo => {
+            photo.customOverlay = (
                 <div style={captionStyle}>
-                    <Label as='a' style={{ pointerEvents: "auto" }} onClick={() => {
-                        this.goToAuthor(i.owner_id);
-                    }}>
-                        <Icon name='user' /> {i.onwer_name}
+                    <Label as='a' style={{ pointerEvents: "auto" }} onClick={() => { this.goToAuthor(photo.owner_id); }}>
+                        <Icon name='copyright outline' /> {photo.onwer_name}
                     </Label>
+                    {this.linksFromDescription(photo.text)}
                 </div>);
-            return i;
+            return photo;
         });
 
         return (
@@ -181,6 +196,7 @@ class PhotosPage extends Component {
                         totalPages={this.state.totalPages}
                     />
 
+                    <UserInfo modalTrigger={<Button>New User</Button>} />
                     <TagPeopleDialog
                         modalOpen={this.state.tagPeopleModalOpened}
                         photos={this.state.selectedImages}
@@ -236,6 +252,22 @@ const captionStyle = {
     width: "100%",
     color: "white",
     padding: "2px"
+};
+
+const linkStyle = {
+    pointerEvents: "auto",
+    wordWrap: "break-word",
+    display: "inline-block",
+    backgroundColor: "rgba(.5, .5, 0, 0.2)",
+    height: "auto",
+    fontSize: "75%",
+    fontWeight: "600",
+    lineHeight: "1",
+    padding: ".2em .6em .3em",
+    borderRadius: ".25em",
+    color: "blue",
+    verticalAlign: "baseline",
+    margin: "2px"
 };
 
 export default PhotosPage;
