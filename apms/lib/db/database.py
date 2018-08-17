@@ -158,6 +158,7 @@ class User(BASE):
     photo = Column(UnicodeText(), nullable=False, default='')
     mobile_phone = Column(UnicodeText(), nullable=True)
     filter_by_albums = Column(UnicodeText(), nullable=True)
+    owner_is_on_photos = Column(Boolean(), nullable=False, default=False)
 
     albums = relationship('Album', back_populates='owner')
     photos = relationship('Photo', back_populates='owner')

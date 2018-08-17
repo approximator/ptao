@@ -148,6 +148,17 @@ class Updater:
             height=info.get('height', 0),
             text=info['text'])
 
+    def tag_people(self):
+        log.info('Start tag_people')
+        session = self._session_factory.make_session()
+        for user in session.query(User).filter(User.owner_is_on_photos).all():
+            log.info(f'Tag photos of {user.first_name} {user.last_name}')
+            for photo in user.photos:
+                people = [user]
+                people.extend(photo.peoples)
+                photo.peoples = list(set(people))
+        session.commit()
+
     async def add_new_photos(self, user, db_session):
         log.info('Starting photos updating')
 
@@ -183,6 +194,8 @@ class Updater:
                 await self.download_photo(new_photo, new_photo.url)
                 if new_photo.width == 0:
                     new_photo.width, new_photo.height = self.get_photo_size(new_photo)
+                if user.owner_is_on_photos:
+                    new_photo.peoples = user
                 db_session.add(new_photo)
                 if downloaded % 100 == 0:
                     db_session.commit()
