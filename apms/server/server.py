@@ -49,6 +49,7 @@ class PhotosHandler(RequestHandler, SessionMixin):
         limit = int(self.get_query_argument('elements_per_page', 200))
         offset = (page - 1) * limit
         owner_id = self.get_query_argument('owner_id', None)
+        photos_of = self.get_query_argument('photos_of', None)
         # sort_by = self.get_query_argument('sort_by', None)
         missing = self.get_query_argument('missing', None)
         to_delete = self.get_query_argument('to_delete', None)
@@ -67,8 +68,11 @@ class PhotosHandler(RequestHandler, SessionMixin):
                 if small:
                     query = query.filter(Photo.width < 450)
 
+                if photos_of is not None:
+                    query = query.filter(Photo.peoples.any(User.id == photos_of))
+
                 count = query.count()
-                result = query.order_by(Photo.date_added.desc()).offset(offset).limit(limit).all()
+                result = query.order_by(Photo.date_downloaded.desc()).offset(offset).limit(limit).all()
 
             photos = {'count': count, 'photos': list(map(lambda photo: photo.to_json(), result))}
             self.set_header('Content-Type', 'application/json')
@@ -291,4 +295,5 @@ class ApmsServer:
 
     def run(self):
         tornado.ioloop.IOLoop.current().spawn_callback(self._updater.update_photos_of_next_user)
+        # tornado.ioloop.IOLoop.current().spawn_callback(self._updater.tag_people)
         tornado.ioloop.IOLoop.current().start()

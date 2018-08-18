@@ -113,8 +113,8 @@ class PhotosPage extends Component {
             caption: photo.text,
             thumbnailWidth: photo.width,
             thumbnailHeight: photo.height,
-            tags: photo.people.map(user => {
-                return { value: user.first_name + ' ' + user.last_name, title: user.first_name + ' ' + user.last_name }
+            peopleTags: photo.people.map(user => {
+                return { id: user.id, first_name: user.first_name, last_name: user.last_name }
             })
         }
     }
@@ -171,6 +171,9 @@ class PhotosPage extends Component {
         var photos = this.state.photos.map(photo => {
             photo.customOverlay = (
                 <div style={captionStyle}>
+                    {photo.peopleTags.map(tag =>
+                        <a href={`/photos?photos_of=${tag.id}`} style={peopleTagsStyle} >{`${tag.first_name} ${tag.last_name}`}</a>
+                    )}
                     <Label as='a' style={{ pointerEvents: "auto" }} onClick={() => { this.goToAuthor(photo.owner_id); }}>
                         <Icon name='copyright outline' /> {photo.onwer_name}
                     </Label>
@@ -242,6 +245,22 @@ class PhotosPage extends Component {
             </div>
         );
     }
+}
+
+const peopleTagsStyle = {
+    pointerEvents: "auto",
+    wordWrap: "break-word",
+    display: "inline-block",
+    backgroundColor: "white",
+    height: "auto",
+    fontSize: "75%",
+    fontWeight: "600",
+    lineHeight: "1",
+    padding: ".2em .6em .3em",
+    borderRadius: ".25em",
+    color: "blue",
+    verticalAlign: "baseline",
+    margin: "2px"
 }
 
 const captionStyle = {
