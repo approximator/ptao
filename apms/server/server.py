@@ -55,6 +55,7 @@ class PhotosHandler(RequestHandler, SessionMixin):
         to_delete = self.get_query_argument('to_delete', None)
         # foreign = self.get_query_argument('foreign', None)
         small = self.get_query_argument('small', None)
+        photo_text = self.get_query_argument('photo_text', None)
 
         with self.make_session() as session:
             if to_delete is not None:
@@ -67,9 +68,11 @@ class PhotosHandler(RequestHandler, SessionMixin):
                     query = query.filter_by(owner_id=owner_id)
                 if small:
                     query = query.filter(Photo.width < 450)
-
                 if photos_of is not None:
                     query = query.filter(Photo.peoples.any(User.id == photos_of))
+                if photo_text is not None:
+                    query = query.filter(Photo.text.ilike(f'%{photo_text}%'))
+
 
                 count = query.count()
                 result = query.order_by(Photo.date_downloaded.desc()).offset(offset).limit(limit).all()
