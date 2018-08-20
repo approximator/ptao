@@ -195,7 +195,7 @@ class Updater:
                 if new_photo.width == 0:
                     new_photo.width, new_photo.height = self.get_photo_size(new_photo)
                 if user.owner_is_on_photos:
-                    new_photo.peoples = user
+                    new_photo.peoples = [user]
                 db_session.add(new_photo)
                 if downloaded % 100 == 0:
                     db_session.commit()
