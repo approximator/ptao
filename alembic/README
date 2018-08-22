@@ -1,1 +1,18 @@
-Generic single-database configuration.
+
+# Create revision
+
+```
+alembic revision -m "create account table"
+```
+
+# Upgrade
+
+```
+alembic upgrade head
+```
+
+# History
+
+```
+alembic history --verbose
+```

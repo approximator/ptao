@@ -117,9 +117,9 @@ class Updater:
 
             session = self._session_factory.make_session()
             user = session.query(User).filter(
-                and_(or_(User.date_photos_updated < since, User.date_photos_updated == None),
-                     not_(User.pause_update))).order_by(  # pylint: disable=singleton-comparison
-                         User.date_photos_updated).first()
+                and_(
+                    or_(User.date_photos_updated < since, User.date_photos_updated == None),  # pylint: disable=singleton-comparison
+                    not_(User.pause_update))).order_by(User.date_photos_updated).first()
 
             if user is None:
                 log.info('No users to update')

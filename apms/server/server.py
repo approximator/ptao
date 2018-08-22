@@ -25,7 +25,7 @@ import datetime
 import tornado
 from tornado.web import RequestHandler, Application, StaticFileHandler
 from sqlalchemy.orm import joinedload
-from sqlalchemy import not_, or_
+from sqlalchemy import not_
 from tornado_sqlalchemy import make_session_factory, SessionMixin
 
 from apms.lib.providers.pd.pdmanager import PDManager
@@ -72,7 +72,6 @@ class PhotosHandler(RequestHandler, SessionMixin):
                     query = query.filter(Photo.peoples.any(User.id == photos_of))
                 if photo_text is not None:
                     query = query.filter(Photo.text.ilike(f'%{photo_text}%'))
-
 
                 count = query.count()
                 result = query.order_by(Photo.date_downloaded.desc()).offset(offset).limit(limit).all()
@@ -203,7 +202,7 @@ async def get_user_from_remote(user_id):
 
 class PeopleTagHandler(RequestHandler, SessionMixin):
 
-    async def put(self):
+    async def put(self, *args, **kwargs):
         try:
             params = json.loads(self.request.body.decode())
             log.info(json.dumps(params, indent=4))
@@ -247,7 +246,7 @@ class UsersUpdateHandler(RequestHandler, SessionMixin):
 
         return user, user_info
 
-    async def get(self, user_id):
+    async def get(self, user_id):  # pylint: disable=arguments-differ
         try:
             _, user_info = await self.get_user_info(user_id)
             self.set_header('Content-Type', 'application/json')
@@ -258,7 +257,7 @@ class UsersUpdateHandler(RequestHandler, SessionMixin):
             self.write(json.dumps({'result': 'Error', 'cause': 'Wrong request', 'description': str(ex)}))
             return
 
-    async def put(self, user_id):
+    async def put(self, user_id):  # pylint: disable=arguments-differ
         try:
             user, _ = await self.get_user_info(user_id)
 

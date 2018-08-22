@@ -8,7 +8,7 @@ import logging
 import boto3
 from botocore.errorfactory import ClientError
 
-from ptao_service.lib.storage.storage_base import StorageBase
+from ..storage_base import StorageBase
 
 log = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
