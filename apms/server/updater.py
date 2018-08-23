@@ -151,12 +151,18 @@ class Updater:
     def tag_people(self):
         log.info('Start tag_people')
         session = self._session_factory.make_session()
-        for user in session.query(User).filter(User.owner_is_on_photos).all():
+        for user in session.query(User).filter(User.default_person_to_tag).all():
             log.info(f'Tag photos of {user.first_name} {user.last_name}')
             for photo in user.photos:
-                people = [user]
-                people.extend(photo.peoples)
-                photo.peoples = list(set(people))
+                people = [session.query(User).filter(User.id == user.default_person_to_tag).one()]
+                people.extend(photo.people)
+                photo.people = list(set(people))
+        for user in session.query(User).filter(User.default_author).all():
+            log.info(f'Tag photos of {user.first_name} {user.last_name}')
+            for photo in user.photos:
+                authors = [session.query(User).filter(User.id == user.default_author).one()]
+                authors.extend(photo.authors)
+                photo.authors = list(set(authors))
         session.commit()
 
     async def add_new_photos(self, user, db_session):
@@ -194,8 +200,10 @@ class Updater:
                 await self.download_photo(new_photo, new_photo.url)
                 if new_photo.width == 0:
                     new_photo.width, new_photo.height = self.get_photo_size(new_photo)
-                if user.owner_is_on_photos:
-                    new_photo.peoples = [user]
+                if user.default_person_to_tag is not None:
+                    new_photo.people = [db_session.query(User).filter(User.id == user.default_person_to_tag).one()]
+                if user.default_author is not None:
+                    new_photo.authors = [db_session.query(User).filter(User.id == user.default_author).one()]
                 db_session.add(new_photo)
                 if downloaded % 100 == 0:
                     db_session.commit()

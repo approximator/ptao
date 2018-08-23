@@ -50,6 +50,7 @@ class PhotosHandler(RequestHandler, SessionMixin):
         offset = (page - 1) * limit
         owner_id = self.get_query_argument('owner_id', None)
         photos_of = self.get_query_argument('photos_of', None)
+        photos_by = self.get_query_argument('photos_by', None)
         # sort_by = self.get_query_argument('sort_by', None)
         missing = self.get_query_argument('missing', None)
         to_delete = self.get_query_argument('to_delete', None)
@@ -69,7 +70,9 @@ class PhotosHandler(RequestHandler, SessionMixin):
                 if small:
                     query = query.filter(Photo.width < 450)
                 if photos_of is not None:
-                    query = query.filter(Photo.peoples.any(User.id == photos_of))
+                    query = query.filter(Photo.people.any(User.id == photos_of))
+                if photos_by is not None:
+                    query = query.filter(Photo.authors.any(User.id == photos_by))
                 if photo_text is not None:
                     query = query.filter(Photo.text.ilike(f'%{photo_text}%'))
 
@@ -220,11 +223,11 @@ class PeopleTagHandler(RequestHandler, SessionMixin):
             log.info(list(map(lambda user: user.to_json(), people)))
             for photo in session.query(Photo).filter(Photo.id.in_(photos_ids)).all():
                 if not overwrite_tags:
-                    people.extend(photo.peoples)
-                    photo.peoples = list(set(people))  # remove duplicates
+                    people.extend(photo.people)
+                    photo.people = list(set(people))  # remove duplicates
                 else:
                     log.info('Overwriting tags')
-                    photo.peoples = people
+                    photo.people = people
             session.commit()
         self.write(json.dumps({'result': 'Success'}))
 
