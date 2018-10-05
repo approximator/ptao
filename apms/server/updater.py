@@ -25,7 +25,7 @@ import aiofiles
 import aiohttp
 
 from PIL import Image
-from sqlalchemy import or_  # , and_, not_
+from sqlalchemy import or_, and_, not_
 
 from ..lib.db.database import Photo, User
 from ..lib.providers.pd.pdmanager import PDManager
@@ -116,9 +116,10 @@ class Updater:
             since = datetime.datetime.now() - onedayearly
 
             session = self._session_factory.make_session()
-            user = session.query(User).filter(or_(User.date_photos_updated < since,
-                                                  User.date_photos_updated == None)).order_by(  # pylint: disable=singleton-comparison
-                                                      User.date_photos_updated).first()
+            user = session.query(User).filter(
+                and_(or_(User.date_photos_updated < since, User.date_photos_updated == None),
+                     not_(User.pause_update))).order_by(  # pylint: disable=singleton-comparison
+                         User.date_photos_updated).first()
 
             if user is None:
                 log.info('No users to update')
@@ -146,6 +147,17 @@ class Updater:
             width=info.get('width', 0),
             height=info.get('height', 0),
             text=info['text'])
+
+    def tag_people(self):
+        log.info('Start tag_people')
+        session = self._session_factory.make_session()
+        for user in session.query(User).filter(User.owner_is_on_photos).all():
+            log.info(f'Tag photos of {user.first_name} {user.last_name}')
+            for photo in user.photos:
+                people = [user]
+                people.extend(photo.peoples)
+                photo.peoples = list(set(people))
+        session.commit()
 
     async def add_new_photos(self, user, db_session):
         log.info('Starting photos updating')
@@ -176,11 +188,14 @@ class Updater:
             log.info('New photos: {}'.format(new_photos_count))
             downloaded = 0
             for new_photo in new_photos:
+                new_photo.owner_id = user.id
                 downloaded += 1
                 log.info('Downloading photo {} of {}'.format(downloaded, new_photos_count))
                 await self.download_photo(new_photo, new_photo.url)
                 if new_photo.width == 0:
                     new_photo.width, new_photo.height = self.get_photo_size(new_photo)
+                if user.owner_is_on_photos:
+                    new_photo.peoples = user
                 db_session.add(new_photo)
                 if downloaded % 100 == 0:
                     db_session.commit()
