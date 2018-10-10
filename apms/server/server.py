@@ -25,7 +25,7 @@ import datetime
 import tornado
 from tornado.web import RequestHandler, Application, StaticFileHandler
 from sqlalchemy.orm import joinedload
-from sqlalchemy import not_, or_
+from sqlalchemy import not_
 from tornado_sqlalchemy import make_session_factory, SessionMixin
 
 from apms.lib.providers.pd.pdmanager import PDManager
@@ -50,11 +50,13 @@ class PhotosHandler(RequestHandler, SessionMixin):
         offset = (page - 1) * limit
         owner_id = self.get_query_argument('owner_id', None)
         photos_of = self.get_query_argument('photos_of', None)
+        photos_by = self.get_query_argument('photos_by', None)
         # sort_by = self.get_query_argument('sort_by', None)
         missing = self.get_query_argument('missing', None)
         to_delete = self.get_query_argument('to_delete', None)
         # foreign = self.get_query_argument('foreign', None)
         small = self.get_query_argument('small', None)
+        photo_text = self.get_query_argument('photo_text', None)
 
         with self.make_session() as session:
             if to_delete is not None:
@@ -67,9 +69,12 @@ class PhotosHandler(RequestHandler, SessionMixin):
                     query = query.filter_by(owner_id=owner_id)
                 if small:
                     query = query.filter(Photo.width < 450)
-
                 if photos_of is not None:
-                    query = query.filter(Photo.peoples.any(User.id == photos_of))
+                    query = query.filter(Photo.people.any(User.id == photos_of))
+                if photos_by is not None:
+                    query = query.filter(Photo.authors.any(User.id == photos_by))
+                if photo_text is not None:
+                    query = query.filter(Photo.text.ilike(f'%{photo_text}%'))
 
                 count = query.count()
                 result = query.order_by(Photo.date_downloaded.desc()).offset(offset).limit(limit).all()
@@ -200,7 +205,7 @@ async def get_user_from_remote(user_id):
 
 class PeopleTagHandler(RequestHandler, SessionMixin):
 
-    async def put(self):
+    async def put(self, *args, **kwargs):
         try:
             params = json.loads(self.request.body.decode())
             log.info(json.dumps(params, indent=4))
@@ -218,11 +223,11 @@ class PeopleTagHandler(RequestHandler, SessionMixin):
             log.info(list(map(lambda user: user.to_json(), people)))
             for photo in session.query(Photo).filter(Photo.id.in_(photos_ids)).all():
                 if not overwrite_tags:
-                    people.extend(photo.peoples)
-                    photo.peoples = list(set(people))  # remove duplicates
+                    people.extend(photo.people)
+                    photo.people = list(set(people))  # remove duplicates
                 else:
                     log.info('Overwriting tags')
-                    photo.peoples = people
+                    photo.people = people
             session.commit()
         self.write(json.dumps({'result': 'Success'}))
 
@@ -244,7 +249,7 @@ class UsersUpdateHandler(RequestHandler, SessionMixin):
 
         return user, user_info
 
-    async def get(self, user_id):
+    async def get(self, user_id):  # pylint: disable=arguments-differ
         try:
             _, user_info = await self.get_user_info(user_id)
             self.set_header('Content-Type', 'application/json')
@@ -255,7 +260,7 @@ class UsersUpdateHandler(RequestHandler, SessionMixin):
             self.write(json.dumps({'result': 'Error', 'cause': 'Wrong request', 'description': str(ex)}))
             return
 
-    async def put(self, user_id):
+    async def put(self, user_id):  # pylint: disable=arguments-differ
         try:
             user, _ = await self.get_user_info(user_id)
 

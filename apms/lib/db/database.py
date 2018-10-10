@@ -35,6 +35,9 @@ photos_tags = Table('__photos_tags__', BASE.metadata, Column('photo_id', Foreign
 photos_people = Table('__photos_people__', BASE.metadata, Column('photo_id', ForeignKey('photos.id'), primary_key=True),
                       Column('user_id', ForeignKey('users.id'), primary_key=True))
 
+photos_authors = Table('__photos_authors__', BASE.metadata, Column(
+    'photo_id', ForeignKey('photos.id'), primary_key=True), Column('user_id', ForeignKey('users.id'), primary_key=True))
+
 photos_albums = Table('__photos_albums__', BASE.metadata, Column('photo_id', ForeignKey('photos.id'), primary_key=True),
                       Column('album_id', ForeignKey('albums.id'), primary_key=True))
 
@@ -98,7 +101,8 @@ class Photo(BASE):
     owner_id = Column(Integer, ForeignKey('users.id'))
     owner = relationship("User", back_populates="photos")
 
-    peoples = relationship('User', secondary=photos_people, back_populates='photos_of')
+    people = relationship('User', secondary=photos_people, back_populates='photos_of')
+    authors = relationship('User', secondary=photos_authors, back_populates='photos_by')
     tags = relationship('Tag', secondary=photos_tags, back_populates='photos')
     albums = relationship('Album', secondary=photos_albums, back_populates='photos')
 
@@ -125,7 +129,7 @@ class Photo(BASE):
         data = obj_to_json(self)
         data['local_url'] = '/files/photos/' + self.dir_name + '/' + self.file_name
         data['owner'] = self.owner.to_json() if self.owner else {}
-        data['people'] = list(map(lambda user: user.to_json(), self.peoples)) if self.peoples else []
+        data['people'] = list(map(lambda user: user.to_json(), self.people)) if self.people else []
         return data
 
 
@@ -158,11 +162,13 @@ class User(BASE):
     photo = Column(UnicodeText(), nullable=False, default='')
     mobile_phone = Column(UnicodeText(), nullable=True)
     filter_by_albums = Column(UnicodeText(), nullable=True)
-    owner_is_on_photos = Column(Boolean(), nullable=False, default=False)
+    default_person_to_tag = Column(Integer, ForeignKey('users.id'), nullable=True)
+    default_author = Column(Integer, ForeignKey('users.id'), nullable=True)
 
     albums = relationship('Album', back_populates='owner')
     photos = relationship('Photo', back_populates='owner')
-    photos_of = relationship('Photo', secondary=photos_people, back_populates='peoples')
+    photos_of = relationship('Photo', secondary=photos_people, back_populates='people')
+    photos_by = relationship('Photo', secondary=photos_authors, back_populates='authors')
 
     def to_json(self):
         return obj_to_json(self)

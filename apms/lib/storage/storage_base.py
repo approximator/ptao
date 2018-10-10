@@ -8,7 +8,7 @@ import logging
 log = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 
-class StorageBase(object):
+class StorageBase:
     """
     Base class for storage
     """
