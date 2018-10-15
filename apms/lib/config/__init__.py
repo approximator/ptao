@@ -32,11 +32,15 @@ class AmpsConfig:
     Config
     """
 
-    def __init__(self):
+    @staticmethod
+    def default_config_file():
         apms_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
-        config_file_name = os.path.join(apms_dir, 'config.yml')
-        log.info('Loading config from {}'.format(config_file_name))
-        self._config = yaml.load(open(config_file_name, 'r'))
+        return os.path.join(apms_dir, 'config.yml')
+
+    def load_config(self, config_file):
+        apms_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+        log.info('Loading config from {}'.format(config_file))
+        self._config = yaml.load(open(config_file, 'r'))
 
         self._static_dir = os.path.realpath(os.path.join(apms_dir, self._config['server']['static_dir']))
         self._photos_dir = os.path.realpath(os.path.join(apms_dir, self._config['server']['photos_dir']))
