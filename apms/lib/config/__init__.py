@@ -32,6 +32,13 @@ class AmpsConfig:
     Config
     """
 
+    def __init__(self):
+        self._config = {}
+
+        self._static_dir = None
+        self._photos_dir = None
+        self._db_connection_string = None
+
     @staticmethod
     def default_config_file():
         apms_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))

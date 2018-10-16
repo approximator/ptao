@@ -12,3 +12,4 @@ alembic
 aiohttp
 aiodns
 aiofiles
+faker
