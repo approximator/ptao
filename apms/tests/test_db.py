@@ -7,8 +7,11 @@ import json
 import asyncio
 import datetime
 import logging
+from pprint import pprint
 
 from pytest import fixture
+
+from faker import Faker
 
 from tornado_sqlalchemy import make_session_factory, SessionMixin
 from ..lib.db.database import Tag, User, Photo, Album, BASE
@@ -22,9 +25,6 @@ from ..lib.config import config
 
 # pylint: disable=redefined-outer-name,missing-docstring
 
-session_factory = make_session_factory('sqlite:////tmp/test.sqlite')
-BASE.metadata.create_all(session_factory.engine)
-
 log = logging.getLogger(__name__)  # pylint: disable=invalid-name
 logging.basicConfig(
     format='%(asctime)s.%(msecs)-3d %(levelname)-8s [%(filename)s:%(lineno)d] %(message)s',
@@ -32,46 +32,17 @@ logging.basicConfig(
     level='INFO')
 
 
-class AppHandler(SessionMixin):
+def test_users_add(session_factory, fake_user_maker):
+    user = fake_user_maker.make()
+    pprint(user.to_json())
+    with session_factory.make_session() as session:
+        session.add(user)
 
-    class App:
-
-        def __init__(self):
-            self.settings = {'session_factory': session_factory}
-
-    def __init__(self):
-        self.application = AppHandler.App()
+    pprint(user.to_json())
 
 
-@fixture
-def test_session_factory():
-    return AppHandler()
-
-
-@fixture
-def some_user():
-    return User(
-        first_name='Fn',
-        last_name='Lm',
-        url='url',
-        date_added=datetime.datetime.now(),
-        date_info_updated=datetime.datetime.now())
-
-
-def test_users_add(test_session_factory):
-    session = session_factory.make_session()
-    user = User(
-        first_name='Fn',
-        last_name='Lm',
-        url='url',
-        date_added=datetime.datetime.now(),
-        date_info_updated=datetime.datetime.now())
-    session.add(user)
-    session.commit()
-
-
-def test_to_json(some_user):
-    print(some_user.to_json())
+def test_to_json(fake_user_maker):
+    pprint(fake_user_maker.make().to_json())
 
 
 # def test_from_json():
@@ -89,6 +60,6 @@ def test_to_json(some_user):
 #     event_loop.close()
 
 
-def test_multiple_sessions(test_session_factory):
-    with test_session_factory.make_session() as session:
+def test_multiple_sessions(session_factory):
+    with session_factory.make_session() as session:
         pass

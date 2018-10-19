@@ -155,12 +155,7 @@ class UsersHandler(RequestHandler, SessionMixin):
 
     def get(self, *args, **kwargs):
         with self.make_session() as session:
-            users = {
-                'users':
-                list(
-                    map(lambda user: user.to_json(),
-                        session.query(User).order_by(User.date_photos_updated_successfully).all()))
-            }
+            users = {'users': [user.to_json() for user in session.query(User).all()]}
             self.set_header('Content-Type', 'application/json')
             self.write(json.dumps(users))
 
@@ -220,7 +215,7 @@ class PeopleTagHandler(RequestHandler, SessionMixin):
 
         with self.make_session() as session:
             people = session.query(User).filter(User.id.in_(people_ids)).all()
-            log.info(list(map(lambda user: user.to_json(), people)))
+            log.info([user.to_json() for user in people])
             for photo in session.query(Photo).filter(Photo.id.in_(photos_ids)).all():
                 if not overwrite_tags:
                     people.extend(photo.people)
@@ -278,7 +273,8 @@ class UsersUpdateHandler(RequestHandler, SessionMixin):
 
 class ApmsServer:
 
-    def __init__(self):
+    def __init__(self, config_file=None):
+        config.load_config(config_file if config_file is not None else config.default_config_file())
         self._session_factory = make_session_factory(config.db_connection_string)
         self._updater = Updater(config, self._session_factory)
         self._app = Application([
