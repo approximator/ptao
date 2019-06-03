@@ -1,33 +1,9 @@
 import React, { Component } from 'react';
-import { Button, Header, Image, Modal, Input, Card } from 'semantic-ui-react'
+import { Button, Image, Modal, Input, Card, Dropdown } from 'semantic-ui-react';
+import { connect } from 'react-redux';
+import { userInfoClose, updateUserInfoDefaultPersons } from '../actions/usersAction';
 
 class UserInfo extends Component {
-
-    state = {
-        userName: '',
-        userPhoto: '',
-        userUrl: '',
-        userId: '',
-        userStatusStr: '',
-
-        userHostUrl: '',
-        userLocalId: '',
-        userPhotosUrl: '',
-
-        infoIsLoading: false,
-        gotInfo: false
-    }
-
-    constructor(props) {
-        super(props)
-        this.fetchUserInfo = this.fetchUserInfo.bind(this);
-        this.addUser = this.addUser.bind(this);
-    }
-
-    componentDidMount() {
-        console.log(this.props);
-    }
-
     getUserId(url) {
         const lastSlashIndex = url.lastIndexOf('/');
         if (lastSlashIndex > 0) {
@@ -36,92 +12,99 @@ class UserInfo extends Component {
         return url;
     }
 
-    fetchUserInfo() {
-        this.setState({ infoIsLoading: true });
-        fetch('/api/users/' + this.state.userId + '/update')
-            .then(res => res.json())
-            .then(data => {
-                console.log(data);
-                this.setState({
-                    userName: data['first_name'] + ' ' + data['last_name'],
-                    userPhoto: data['photo'],
-                    userId: data['id'],
-                    userLocalId: data.local_id ? data.local_id : '',
-                    userPhotosUrl: data.local_photos_url ? data.local_photos_url : '',
-                    userHostUrl: data.host_url ? data.host_url : '',
-                    userStatusStr: data.status_str ? data.status_str : '',
-                    gotInfo: true,
-                    infoIsLoading: false
-                });
-            })
-            .catch(err => {
-                console.error(err)
-                this.setState({ infoIsLoading: false });
-            })
-    }
-
-    addUser() {
-        const options = {
-            method: 'put',
-            headers: { 'Content-type': 'application/json; charset=UTF-8' }
-        }
-        fetch('/api/users/' + this.state.userId + '/update', options)
-            .then(res => res.json())
-            .then(data => {
-                console.log(data);
-            })
-            .catch(err => {
-                console.error(err)
-                this.setState({ infoIsLoading: false });
-            })
-    }
-
     render() {
+        let user = this.props.currentUser;
         return (
-            <Modal trigger={this.props.modalTrigger} active={true}>
-                <Modal.Header>
-                    <Input fluid loading={this.state.infoIsLoading}
-                        action={{ icon: 'search', onClick: this.fetchUserInfo }}
-                        onChange={e =>
-                            this.setState({ userUrl: e.target.value, userId: this.getUserId(e.target.value) })
-                        }
-                        placeholder='Enter url' />
-                </Modal.Header>
-                <Modal.Content image>
-                    <Image wrapped size='medium' src={this.state.userPhoto} />
-                    <Modal.Description>
-                        {this.state.gotInfo &&
+            user !== undefined && (
+                <Modal size="large" open={this.props.isOpen} onClose={this.props.userInfoClose}>
+                    <Modal.Header>
+                        <Input
+                            fluid
+                            loading={true}
+                            action={{ icon: 'search', onClick: () => this.props.fetchUserInfo(this.state.userId) }}
+                            onChange={e =>
+                                this.setState({ userUrl: e.target.value, userId: this.getUserId(e.target.value) })
+                            }
+                            placeholder="Enter url"
+                        />
+                    </Modal.Header>
+                    <Modal.Content image>
+                        <Image wrapped size="medium" src={user.photo} />
+                        <Modal.Description>
                             <Card>
                                 <Card.Content>
-                                    <Card.Header>{this.state.userName}</Card.Header>
+                                    <Card.Header>{`${user.first_name} ${user.last_name}`}</Card.Header>
                                     <Card.Meta>
-                                        <a href={this.state.userHostUrl}>Host URL</a>
-                                        {this.state.userPhotosUrl &&
-                                            <a href={this.state.userPhotosUrl}>Local photos</a>
-                                        }
+                                        <a href={user.url}>Host URL</a>
                                     </Card.Meta>
-                                    <Card.Description>
-                                        {this.state.userStatusStr}
-                                    </Card.Description>
+                                    <Card.Description>{user.status_str}</Card.Description>
+                                </Card.Content>
+                            </Card>
+
+                            <Card>
+                                <Card.Content>
+                                    <h5>Default autor:</h5>
+                                    <Dropdown
+                                        search
+                                        selection
+                                        placeholder="Choose someone"
+                                        options={this.props.peopleDropdownList}
+                                        defaultValue={user.default_author}
+                                        onChange={(e, { value }) => {
+                                            this.setState({ default_author: value });
+                                        }}
+                                    />
+
+                                    <h5>Default person to tag:</h5>
+                                    <Dropdown
+                                        search
+                                        selection
+                                        placeholder="Choose someone"
+                                        options={this.props.peopleDropdownList}
+                                        defaultValue={user.default_person_to_tag}
+                                        onChange={(e, { value }) => {
+                                            this.setState({ default_person_to_tag: value });
+                                        }}
+                                    />
                                 </Card.Content>
                                 <Card.Content extra>
-
-                                    <div className='ui two buttons'>
-                                        <Button basic color='green' onClick={this.addUser}>
-                                            Add
+                                    <div className="ui two buttons">
+                                        <Button
+                                            basic
+                                            color="green"
+                                            onClick={() => {
+                                                this.props.updateUserInfoDefaultPersons(
+                                                    user.id,
+                                                    this.state ? this.state.default_author : undefined,
+                                                    this.state ? this.state.default_person_to_tag : undefined
+                                                );
+                                            }}
+                                        >
+                                            Update
                                         </Button>
-                                        <Button basic color='red'>
-                                            Calcel
+                                        <Button basic color="red">
+                                            Cancel
                                         </Button>
                                     </div>
                                 </Card.Content>
                             </Card>
-                        }
-                    </Modal.Description>
-                </Modal.Content>
-            </Modal>
+                        </Modal.Description>
+                    </Modal.Content>
+                </Modal>
+            )
         );
     }
 }
 
-export default UserInfo;
+function mapStateToProps(state) {
+    return {
+        currentUser: state.userReducer.users.find(usr => usr.id === state.userReducer.currentUser),
+        isOpen: state.userReducer.userInfoOpen,
+        peopleDropdownList: state.userReducer.peopleDropdownList
+    };
+}
+
+export default connect(
+    mapStateToProps,
+    { userInfoClose, updateUserInfoDefaultPersons }
+)(UserInfo);
