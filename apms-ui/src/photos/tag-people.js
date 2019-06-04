@@ -1,98 +1,91 @@
 import React, { Component } from 'react';
-import { List, Grid, Image, Modal, Dropdown, Button, Icon, Checkbox } from 'semantic-ui-react'
+import { Item, Grid, Modal, Dropdown, Button, Icon, Checkbox, Label, Message } from 'semantic-ui-react';
+import { connect } from 'react-redux';
+import { fetchUsers, tagPeopleDialogClose, saveUserTags } from '../actions/usersAction';
 
 class TagPeopleDialog extends Component {
-
-    state = {
-        modalOpen: false,
-        overwriteTags: false,
-        photos: [],
-        allPeople: [],
-        selectedUsers: []
-    }
-
-    constructor(props) {
-        super(props);
-        this.saveUserTags = this.saveUserTags.bind(this);
-    }
-
-    componentDidMount() {
-        fetch('/api/users')
-            .then(res => res.json())
-            .then(data => this.setState({ allPeople: data.users }));
-    }
-
-    componentWillReceiveProps(newProps) {
-        this.setState({
-            modalOpen: newProps.modalOpen,
-            photos: newProps.photos
-        })
-    }
-
-    saveUserTags() {
-        const data = {
-            photos: this.state.photos.map(ph => ph.id),
-            people: this.state.selectedUsers.map(user => user.id),
-            overwriteTags: this.state.overwriteTags
-        }
-
-        const options = {
-            method: 'put',
-            headers: { 'Content-type': 'application/json; charset=UTF-8' },
-            body: JSON.stringify(data)
-        }
-
-        fetch('/api/photos/tagPeople', options)
-            .then(response => response.json())
-            .then(body => {
-                console.log(body)
-            })
-            .catch(err => console.error(err))
+    componentWillMount() {
+        console.log('componentWillMount. Props', this.props);
+        this.props.fetchUsers();
     }
 
     render() {
-        const allPeopleOptions =
-            <Dropdown search selection multiple
-                placeholder='Choose someone'
-                options={this.state.allPeople.map((user) => {
-                    return { key: user.id, value: user, text: `${user.first_name} ${user.last_name}` };
-                })}
-                onChange={(e, { value }) => {
-                    this.setState({ selectedUsers: value });
-                }}
-            />
-
-        const photosList = this.state.photos.map((ph) =>
-            <List.Item>
-                <Image avatar src={ph.src} />
-                <List.Content>
-                    <List.Header as='a'>{ph.onwer_name}</List.Header>
-                </List.Content>
-            </List.Item>
-        )
-
+        if (!this.props.photos) {
+            return null;
+        }
         return (
-            <Modal open={this.state.modalOpen}>
-                <Modal.Header>Tag People</Modal.Header>
-                <Modal.Content>
+            <Modal size="large" open={this.props.isOpen} onClose={this.props.tagPeopleDialogClose}>
+                <Modal.Header>
+                    {this.props.success !== 'unknown' && (
+                        <Message floating success={this.state.success === 'success'} header={this.state.success} />
+                    )}
+                    Tag People
+                </Modal.Header>
+                <Modal.Content scrolling>
                     <Grid columns={2} relaxed divided>
                         <Grid.Column>
-                            <List>
-                                <List.Item>
-                                    <List.Header>Photos to tag</List.Header>
-                                </List.Item>
-                                {photosList}
-                            </List>
+                            <Item.Group>
+                                {this.props.photos.map(ph => (
+                                    <Item key={ph.id}>
+                                        <Item.Image
+                                            size="small"
+                                            label={{
+                                                color: 'blue',
+                                                content: ph.onwer_name,
+                                                icon: 'copyright',
+                                                ribbon: true
+                                            }}
+                                            src={ph.src}
+                                        />
+                                        <Item.Content verticalAlign="middle">
+                                            {ph.people_tags.map(tag => (
+                                                <Label
+                                                    key={`${ph.id}_label`}
+                                                    icon="user"
+                                                    content={`${tag.first_name} ${tag.last_name}`}
+                                                />
+                                            ))}
+                                        </Item.Content>
+                                    </Item>
+                                ))}
+                            </Item.Group>
                         </Grid.Column>
                         <Grid.Column>
-                            <Checkbox toggle label='Overwrite' onChange={(e, { checked }) => this.setState({ overwriteTags: checked })} /><br />
-                            {allPeopleOptions}
+                            <Checkbox
+                                toggle
+                                label="Overwrite"
+                                onChange={(e, { checked }) => this.setState({ overwriteTags: checked })}
+                            />
+                            <br />
+                            <Dropdown
+                                search
+                                selection
+                                multiple
+                                placeholder="Choose someone"
+                                options={this.props.peopleDropdownList}
+                                onChange={(e, { value }) => {
+                                    this.setState({ selectedUsers: value });
+                                }}
+                            />
                         </Grid.Column>
                     </Grid>
                 </Modal.Content>
                 <Modal.Actions>
-                    <Button color='green' inverted onClick={this.saveUserTags}>
-                        <Icon name='checkmark' /> Save
+                    <Button
+                        color="green"
+                        inverted
+                        onClick={() =>
+                            this.props.saveUserTags(
+                                this.props.photos,
+                                this.state.selectedUsers,
+                                this.state.overwriteTags
+                            )
+                        }
+                    >
+                        <Icon name="checkmark" /> Save
+                    </Button>
+                    <Button color="yellow" inverted onClick={this.onClose}>
+                        <Icon name="close" /> Close
                     </Button>
                 </Modal.Actions>
             </Modal>
@@ -100,4 +93,16 @@ class TagPeopleDialog extends Component {
     }
 }
 
-export default TagPeopleDialog;
+function mapStateToProps(state) {
+    return {
+        photos: state.userReducer.photos,
+        isOpen: state.userReducer.tagUsersDialogOpen,
+        peopleDropdownList: state.userReducer.peopleDropdownList,
+        success: state.userReducer.success
+    };
+}
+
+export default connect(
+    mapStateToProps,
+    { tagPeopleDialogClose, saveUserTags, fetchUsers }
+)(TagPeopleDialog);
