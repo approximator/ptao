@@ -1,292 +1,190 @@
 import React, { Component } from 'react';
-import { Button, Label, Icon, Menu, Pagination } from 'semantic-ui-react'
-import Gallery from 'react-grid-gallery';
+import { Button, Menu, Pagination, Segment, Form, Sidebar } from 'semantic-ui-react';
+import Gallery from 'react-photo-gallery';
+import Lightbox from 'react-image-lightbox';
 import KeyboardEventHandler from 'react-keyboard-event-handler';
 import UserInfo from '../people/user-info';
 import TagPeopleDialog from './tag-people';
+import Image from './image';
+import { makeSearchParams } from '../utils/urlParams';
+import { connect } from 'react-redux';
+import {
+    fetchPhotos,
+    lightboxClose,
+    lightboxPrev,
+    lightboxNext,
+    imageClick,
+    deletePhotos
+} from '../actions/photosActions';
+import { tagPeopleDialogOpen } from '../actions/usersAction';
+import { shiftUp, shiftDown } from '../actions/keyboardActions';
+import 'react-image-lightbox/style.css';
 
 class PhotosPage extends Component {
-
-    state = {
-        photos: [],
-        currentImage: 0,
-        lightboxOpened: false,
-        totalPhotosCount: undefined,
-        totalPages: undefined,
-        currentPage: 1,
-        photosPerPage: 200,
-        shiftPressed: false,
-
-        tagPeopleModalOpened: false,
-        selectedImages: []
-    }
-
     constructor(props) {
-        super(props)
+        super(props);
 
         this.onPaginationChange = this.onPaginationChange.bind(this);
-        this.onCurrentImageChange = this.onCurrentImageChange.bind(this);
-        this.onSelectImage = this.onSelectImage.bind(this);
+    }
+
+    componentWillMount() {
+        this.props.fetchPhotos(this.props.location.search);
     }
 
     componentWillReceiveProps(newProps) {
-        if (newProps.location.search != this.props.location.search) {
-            this.fetchPhotos(newProps.location.search);
+        if (newProps.location.search !== this.props.location.search) {
+            this.props.fetchPhotos(newProps.location.search);
         }
-    }
-
-    componentDidMount() {
-        this.fetchPhotos(this.props.location.search)
-    }
-
-    fetchPhotos(searchParams) {
-        let params = new URLSearchParams(searchParams);
-        const page = params.has("page") ? parseInt(params.get('page')) : 1;
-        const photosPerPage = params.has("elements_per_page") ? parseInt(params.get('elements_per_page')) : 200;
-        params.set('page', page);
-        params.set('elements_per_page', photosPerPage);
-        const url = '/api/photos?' + params.toString()
-        console.log('Requesting: ' + url)
-        fetch(url)
-            .then(res => res.json())
-            .then(data => {
-                console.log(data);
-                this.setState({
-                    photos: data.photos.map(photo => this.createImgObj(params.has("missing"), photo)),
-                    totalPhotosCount: data['count'],
-                    totalPages: Math.ceil(Number(data['count']) / photosPerPage)
-                });
-                window.scrollTo({
-                    top: 0,
-                    behavior: "smooth"
-                });
-            })
-        this.setState({
-            currentPage: parseInt(params.get('page')),
-            photosPerPage: photosPerPage
-        })
     }
 
     onPaginationChange(e, { activePage }) {
+        this.props.history.push(`?${makeSearchParams({ page: activePage }, this.props.location.search)}`);
+    }
+
+    handleSort = (e, { value }) => {
         let params = new URLSearchParams(this.props.location.search);
-        params.set('page', activePage)
-        this.props.history.push(`?${params.toString()}`);
-        console.log(`Current page ${activePage}`)
-    }
-
-    onClickSelectAll() {
-        let photos = this.state.photos.slice();
-        const isAllSelected = photos.filter(photo => photo.isSelected === true).length === photos.length
-
-        photos.forEach(img => { img.isSelected = !isAllSelected; });
-        this.setState({
-            photos: photos
-        });
-    }
-
-    onSelectImage(index, image) {
-        var photos = this.state.photos.slice();
-        var img = photos[index];
-        img.isSelected = img.hasOwnProperty("isSelected") ? !img.isSelected : true;
-
-        this.setState({
-            photos: photos
-        });
-    }
-
-    onCurrentImageChange(index) {
-        this.setState({ currentImage: index });
-    }
-
-    getSelectedImages() {
-        return this.state.photos.filter(photo => photo.isSelected === true);
-    }
-
-    createImgObj(is_missing, photo) {
-        return {
-            id: photo.id,
-            owner_id: photo.owner_id,
-            onwer_name: photo.owner.first_name + ' ' + photo.owner.last_name,
-            src: is_missing ? photo.url : photo.local_url,
-            thumbnail: is_missing ? photo.url : photo.local_url,
-            text: photo.text,
-            caption: photo.text,
-            thumbnailWidth: photo.width,
-            thumbnailHeight: photo.height,
-            peopleTags: photo.people.map(user => {
-                return { id: user.id, first_name: user.first_name, last_name: user.last_name }
-            })
-        }
-    }
-
-    removeImages(imgs) {
-        console.log(imgs)
-        const data = {
-            photos: imgs.map(img => img.id)
-        }
-
-        const options = {
-            method: 'delete',
-            headers: { 'Content-type': 'application/json; charset=UTF-8' },
-            body: JSON.stringify(data)
-        }
-
-        fetch('/api/photos', options)
-            .then(response => response.json())
-            .then(body => {
-                console.log(body)
-                this.setState({ photos: this.state.photos.filter(photo => !imgs.includes(photo)) });
-            })
-            .catch(err => console.error(err))
-    }
-
-    removeSelectedImages() {
-        let selectedImgs = this.getSelectedImages()
-        this.removeImages(selectedImgs)
-    }
-
-    goToAuthor(owner_id) {
-        let params = new URLSearchParams(this.props.location.search);
-        params.set('owner_id', owner_id);
+        params.set('sort_by', value);
         params.set('page', 1);
         this.props.history.push(`?${params.toString()}`);
-    }
-
-    linksFromDescription(description) {
-        if (description === undefined) {
-            return;
-        }
-
-        const matches = description.match(/\[(id\d+)(.*?)\]/gmi);
-        if (!matches) {
-            return;
-        }
-        const links  = matches.map(match => match.substring(1, match.length-1).split('|'));
-        return links.map(link =>
-            <a href={`https://vk.com/${link[0]}`} style={linkStyle} >{link[1]}</a>
-        )
-    }
+    };
 
     render() {
-        var photos = this.state.photos.map(photo => {
-            photo.customOverlay = (
-                <div style={captionStyle}>
-                    {photo.peopleTags.map(tag =>
-                        <a href={`/photos?photos_of=${tag.id}`} style={peopleTagsStyle} >{`${tag.first_name} ${tag.last_name}`}</a>
-                    )}
-                    <Label as='a' style={{ pointerEvents: "auto" }} onClick={() => { this.goToAuthor(photo.owner_id); }}>
-                        <Icon name='copyright outline' /> {photo.onwer_name}
-                    </Label>
-                    {this.linksFromDescription(photo.text)}
-                </div>);
-            return photo;
+        let { photos, sortBy, lightboxIsOpen, currentImage } = this.props;
+        let photosSrcs = this.props.photos.map(photo => {
+            return photo.src;
         });
-
         return (
             <div>
-                <Menu className="secondaryTopMenu" fixed='bottom' inverted>
-                    <Button compact toggle active={this.state.selectAllChecked} onClick={() => this.onClickSelectAll()}>
-                        Select All
-                    </Button>
-
-                    <Pagination inverted
-                        showEllipsis={false}
-                        showFirstAndLastNav={false}
+                {/* <Icon
+                    name="sidebar"
+                    style={{ position: 'fixed', top: '80px', left: '5px' }}
+                    onClick={() => this.setState({ sidebarVisible: !this.props.sidebarVisible })}
+                /> */}
+                <Sidebar.Pushable as={Segment}>
+                    <Sidebar visible={this.props.sidebarVisible} animation="overlay">
+                        <Segment color="green">
+                            <h3>filter</h3>
+                            <Form>
+                                <Form.Group>
+                                    <Form.Field>
+                                        <label>Sort</label>
+                                        <Form.Radio
+                                            label="Date taken"
+                                            value="date-taken"
+                                            checked={sortBy === 'date-taken'}
+                                            onChange={this.handleSort}
+                                        />
+                                        <Form.Radio
+                                            label="Date downloaded"
+                                            value="date-downloaded"
+                                            checked={sortBy === 'date-downloaded'}
+                                            onChange={this.handleSort}
+                                        />
+                                        <Form.Radio
+                                            label="Rating"
+                                            value="rating"
+                                            checked={sortBy === 'rating'}
+                                            onChange={this.handleSort}
+                                        />
+                                    </Form.Field>
+                                </Form.Group>
+                            </Form>
+                        </Segment>
+                    </Sidebar>
+                    <Sidebar.Pusher>
+                        <Gallery photos={photos} onClick={this.props.imageClick} ImageComponent={Image} />
+                        {lightboxIsOpen && (
+                            <Lightbox
+                                mainSrc={photosSrcs[currentImage]}
+                                nextSrc={photosSrcs[(currentImage + 1) % photos.length]}
+                                prevSrc={photosSrcs[(currentImage + photos.length - 1) % photos.length]}
+                                imageCaption={photos[currentImage].text}
+                                imageTitle={photos[currentImage].onwer_name}
+                                onCloseRequest={this.props.lightboxClose}
+                                toolbarButtons={[
+                                    <Button
+                                        icon="trash"
+                                        onClick={() => this.props.deletePhotos([photos[currentImage]])}
+                                    />
+                                ]}
+                                onMovePrevRequest={this.props.lightboxPrev}
+                                onMoveNextRequest={this.props.lightboxNext}
+                            />
+                        )}
+                    </Sidebar.Pusher>
+                </Sidebar.Pushable>
+                <Menu className="secondaryTopMenu" fixed="bottom" inverted>
+                    <Pagination
+                        inverted
+                        // showEllipsis={false}
+                        // showFirstAndLastNav={false}
                         boundaryRange={4}
                         siblingRange={1}
-                        activePage={this.state.currentPage}
+                        activePage={this.props.currentPage}
                         onPageChange={this.onPaginationChange}
-                        totalPages={this.state.totalPages}
+                        totalPages={this.props.totalPages}
                     />
 
                     <UserInfo modalTrigger={<Button>New User</Button>} />
-                    <TagPeopleDialog
-                        modalOpen={this.state.tagPeopleModalOpened}
-                        photos={this.state.selectedImages}
-                    />
-                    <Button compact onClick={() => {
-                        const selectedImgs = this.getSelectedImages().slice();
-                        this.setState({
-                            tagPeopleModalOpened: true,
-                            selectedImages: selectedImgs
-                        })
-                        console.log(`selected images: ${selectedImgs}`)
-                    }}>
+
+                    <TagPeopleDialog />
+                    <Button
+                        compact
+                        onClick={() => {
+                            this.props.tagPeopleDialogOpen(this.props.photos.filter(photo => photo.selected === true));
+                        }}
+                    >
                         Tag People
                     </Button>
                 </Menu>
 
-                <Gallery
-                    images={photos}
-                    rowHeight={250}
-                    onSelectImage={this.onSelectImage}
-                    currentImageWillChange={this.onCurrentImageChange}
-                    lightboxWillOpen={() => this.setState({ lightboxOpened: true })}
-                    lightboxWillClose={() => this.setState({ lightboxOpened: false })}
-
-                    customControls={[
-                    ]}
-                />
-
                 <KeyboardEventHandler
-                    handleKeys={['del', 'shift']}
+                    handleKeys={['all']}
+                    handleEventType={'keyup'}
                     onKeyEvent={(key, e) => {
-                        if (key === "del") {
-                            console.log(`del key. Lightbox opened: ${this.state.lightboxOpened}`)
-                            if (this.state.lightboxOpened) {
-                                this.removeImages([this.state.photos[this.state.currentImage]]);
-                            } else {
-                                this.removeSelectedImages();
-                            }
+                        if (key === 'shift') {
+                            this.props.shiftUp();
                         }
                     }}
-                >
-                </KeyboardEventHandler>
+                />
+                <KeyboardEventHandler
+                    handleKeys={['all']}
+                    onKeyEvent={(key, e) => {
+                        console.log(key);
+                        if (key === 'del') {
+                            console.log(`del key. Lightbox opened: ${this.props.lightboxIsOpen}`);
+                            if (this.props.lightboxIsOpen) {
+                                this.props.deletePhotos([this.props.photos[this.props.currentImage]]);
+                            } else {
+                                this.props.deletePhotos(this.props.photos.filter(photo => photo.selected === true));
+                            }
+                        } else if (key === 'shift') {
+                            this.props.shiftDown();
+                        }
+                    }}
+                />
             </div>
         );
     }
 }
 
-const peopleTagsStyle = {
-    pointerEvents: "auto",
-    wordWrap: "break-word",
-    display: "inline-block",
-    backgroundColor: "white",
-    height: "auto",
-    fontSize: "75%",
-    fontWeight: "600",
-    lineHeight: "1",
-    padding: ".2em .6em .3em",
-    borderRadius: ".25em",
-    color: "blue",
-    verticalAlign: "baseline",
-    margin: "2px"
-}
-
-const captionStyle = {
-    backgroundColor: "rgba(0, 0, 0, 0.2)",
-    overflow: "hidden",
-    position: "absolute",
-    bottom: "0",
-    width: "100%",
-    color: "white",
-    padding: "2px"
+const mapStateToProps = state => {
+    return {
+        ...state.photos
+    };
 };
 
-const linkStyle = {
-    pointerEvents: "auto",
-    wordWrap: "break-word",
-    display: "inline-block",
-    backgroundColor: "rgba(.5, .5, 0, 0.2)",
-    height: "auto",
-    fontSize: "75%",
-    fontWeight: "600",
-    lineHeight: "1",
-    padding: ".2em .6em .3em",
-    borderRadius: ".25em",
-    color: "blue",
-    verticalAlign: "baseline",
-    margin: "2px"
-};
-
-export default PhotosPage;
+export default connect(
+    mapStateToProps,
+    {
+        fetchPhotos,
+        lightboxClose,
+        lightboxNext,
+        lightboxPrev,
+        imageClick,
+        shiftUp,
+        shiftDown,
+        deletePhotos,
+        tagPeopleDialogOpen
+    }
+)(PhotosPage);
