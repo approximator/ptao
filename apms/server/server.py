@@ -51,7 +51,7 @@ class PhotosHandler(RequestHandler, SessionMixin):
         owner_id = self.get_query_argument('owner_id', None)
         photos_of = self.get_query_argument('photos_of', None)
         photos_by = self.get_query_argument('photos_by', None)
-        # sort_by = self.get_query_argument('sort_by', None)
+        sort_by = self.get_query_argument('sort_by', 'date-downloaded')
         missing = self.get_query_argument('missing', None)
         to_delete = self.get_query_argument('to_delete', None)
         # foreign = self.get_query_argument('foreign', None)
@@ -76,10 +76,17 @@ class PhotosHandler(RequestHandler, SessionMixin):
                 if photo_text is not None:
                     query = query.filter(Photo.text.ilike(f'%{photo_text}%'))
 
-                count = query.count()
-                result = query.order_by(Photo.date_downloaded.desc()).offset(offset).limit(limit).all()
+                if sort_by == 'date-downloaded':
+                    query = query.order_by(Photo.date_downloaded.desc())
+                elif sort_by == 'date-taken':
+                    query = query.order_by(Photo.date_added.desc())
+                elif sort_by == 'rating':
+                    query = query.order_by(Photo.rating.desc())
 
-            photos = {'count': count, 'photos': list(map(lambda photo: photo.to_json(), result))}
+                count = query.count()
+                result = query.offset(offset).limit(limit).all()
+
+            photos = {'count': count, 'page': page, 'photos': list(map(lambda photo: photo.to_json(), result))}
             self.set_header('Content-Type', 'application/json')
             self.write(json.dumps(photos))
 
