@@ -16,6 +16,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+import os
 from time import mktime
 
 from sqlalchemy import Column, Integer, UnicodeText, DateTime, Boolean, ForeignKey, Table
@@ -35,8 +36,10 @@ photos_tags = Table('__photos_tags__', BASE.metadata, Column('photo_id', Foreign
 photos_people = Table('__photos_people__', BASE.metadata, Column('photo_id', ForeignKey('photos.id'), primary_key=True),
                       Column('user_id', ForeignKey('users.id'), primary_key=True))
 
-photos_authors = Table('__photos_authors__', BASE.metadata, Column(
-    'photo_id', ForeignKey('photos.id'), primary_key=True), Column('user_id', ForeignKey('users.id'), primary_key=True))
+photos_authors = Table('__photos_authors__', BASE.metadata, Column('photo_id',
+                                                                   ForeignKey('photos.id'),
+                                                                   primary_key=True),
+                       Column('user_id', ForeignKey('users.id'), primary_key=True))
 
 photos_albums = Table('__photos_albums__', BASE.metadata, Column('photo_id', ForeignKey('photos.id'), primary_key=True),
                       Column('album_id', ForeignKey('albums.id'), primary_key=True))
@@ -127,9 +130,10 @@ class Photo(BASE):
 
     def to_json(self):
         data = obj_to_json(self)
-        data['local_url'] = '/files/photos/' + self.dir_name + '/' + self.file_name
+        data['local_url'] = os.path.join('/files/photos', self.dir_name, self.file_name)
         data['owner'] = self.owner.to_json() if self.owner else {}
         data['people'] = list(map(lambda user: user.to_json(), self.people)) if self.people else []
+        data['authors'] = list(map(lambda user: user.to_json(), self.authors)) if self.authors else []
         return data
 
 
