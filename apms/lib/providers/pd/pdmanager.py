@@ -18,12 +18,11 @@ class PDManager:
     def __init__(self, settings):
         self._info_fields = ','.join(settings['user_info_fields'])
         self._group_info_fields = ','.join(settings['group_info_fields'])
-        self._api = PDApi(
-            base=settings['base'],
-            access_token=settings['token'],
-            v=settings['version'],
-            https=1,
-            lang=settings['lang'])
+        self._api = PDApi(base=settings['base'],
+                          access_token=settings['token'],
+                          v=settings['version'],
+                          https=1,
+                          lang=settings['lang'])
 
     async def get_kind(self, screen_name):
         if screen_name.startswith('id'):
@@ -53,6 +52,11 @@ class PDManager:
 
     async def get_group_info(self, group_id):
         resp = await self._api.groups.getById(group_id=group_id, fields=self._group_info_fields)
+        log.debug(json.dumps(resp, indent=4))
+        return resp
+
+    async def get_tags(self, owner_id, photo_id):
+        resp = await self._api.photos.getTags(owner_id=owner_id, photo_id=photo_id)
         log.debug(json.dumps(resp, indent=4))
         return resp
 
