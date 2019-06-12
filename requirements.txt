@@ -13,3 +13,7 @@ aiohttp
 aiodns
 aiofiles
 faker
+apispec
+apispec_webframeworks
+marshmallow
+marshmallow_sqlalchemy
