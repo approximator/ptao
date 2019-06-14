@@ -11,6 +11,8 @@ from tornado_sqlalchemy import SessionMixin
 from apms.lib.config import config
 from apms.lib.db.database import Photo, User
 
+from apms.server.api_schemas import PeopleTagRequest, ApiResult
+
 log = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 
@@ -21,9 +23,54 @@ class PhotosHandler(RequestHandler, SessionMixin):
 
     def get(self):  # pylint: disable=too-many-locals
         """Get photos
+        ---
+        summary: Get photos
+        tags:
+          - "Photos"
+        parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+          description: Return photos from specified page
+        - in: query
+          name: elements_per_page
+          schema:
+            type: integer
+          description: Number of photos on a page
+        - in: query
+          name: owner_id
+          schema:
+            type: integer
+          description: Return photos of specified owner
+        - in: query
+          name: photos_of
+          schema:
+            type: integer
+          description: Return photos of specified person
+        - in: query
+          name: photos_by
+          schema:
+            type: integer
+          description: Return photos made by a specified author
+        - in: query
+          name: sort_by
+          schema:
+            type: string
+            enum: ['date-downloaded', 'date-taken', 'rating']
+          description: Sorting order
+        - in: query
+          name: photo_text
+          schema:
+            type: string
+          description: Search specified pattern in photo text
+        responses:
+          200:
+            description: List of photos
+            schema: GetPhotosResponseSchema
         """
         page = int(self.get_query_argument('page', 1))
-        limit = int(self.get_query_argument('elements_per_page', 200))
+        limit = int(self.get_query_argument('elements_per_page', 100))
         offset = (page - 1) * limit
         owner_id = self.get_query_argument('owner_id', None)
         photos_of = self.get_query_argument('photos_of', None)
@@ -84,12 +131,31 @@ class PhotosHandler(RequestHandler, SessionMixin):
         return len(result), result
 
     def delete(self):
+        """Delete photos
+        ---
+        summary: Delete photos
+        tags:
+          - "Photos"
+        parameters:
+          - name: data
+            in: body
+            description: List of photos to delete
+            required: true
+            schema: DeletePhotosRequest
+
+        responses:
+          200:
+            schema: ApiResult
+          400:
+            schema: ApiResult
+        """
         try:
             photos_to_delete = json.loads(self.request.body.decode())['photos']
         except Exception as ex:  # pylint: disable=broad-except
             log.info(ex)
+            resp = ApiResult('error', str(ex))
             self.set_status(400)
-            self.write(json.dumps({'result': 'Error', 'cause': 'Wrong request', 'description': str(ex)}))
+            self.write(ApiResult.Schema().dumps(resp))
             return
 
         log.info('Going to remove {}'.format(photos_to_delete))
@@ -115,4 +181,52 @@ class PhotosHandler(RequestHandler, SessionMixin):
                 log.info('{} marked as deleted by me'.format(photo.id))
             session.commit()
 
-            self.write(json.dumps({'result': 'Ok', 'deleted': photos_to_delete}))
+            resp = ApiResult('success', f'deleted: {photos_to_delete}')
+            self.write(ApiResult.Schema().dumps(resp))
+
+
+class PeopleTagHandler(RequestHandler, SessionMixin):
+
+    async def put(self):
+        """Tag people
+        ---
+        summary: Tag people on photo
+        tags:
+          - "Photos"
+        parameters:
+          - name: data
+            in: body
+            description: List of photos to tad along with list of people to add to each photo
+            required: true
+            schema: PeopleTagRequest
+
+        responses:
+          200:
+            schema: ApiResult
+          400:
+            schema: ApiResult
+        """
+        try:
+            data = self.request.body.decode()
+            log.info(data)
+            params = PeopleTagRequest.Schema().loads(data)
+        except Exception as ex:  # pylint: disable=broad-except
+            log.info(ex)
+            resp = ApiResult('error', str(ex))
+            self.set_status(400)
+            self.write(ApiResult.Schema().dumps(resp))
+            return
+
+        with self.make_session() as session:
+            people = session.query(User).filter(User.id.in_(params.people)).all()
+            for photo in session.query(Photo).filter(Photo.id.in_(params.photos)).all():
+                if not params.overwrite_tags:
+                    people.extend(photo.people)
+                    photo.people = list(set(people))  # remove duplicates
+                else:
+                    log.info('Overwriting tags')
+                    photo.people = people
+            session.commit()
+
+        resp = ApiResult('success', 'Tags have been added')
+        self.write(ApiResult.Schema().dumps(resp))
