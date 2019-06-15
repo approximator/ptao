@@ -6,7 +6,7 @@ from tornado.web import RequestHandler
 from tornado_sqlalchemy import SessionMixin
 
 from apms.lib.config import config
-from apms.lib.db.database import User, Photo
+from apms.lib.db.database import User
 from apms.lib.providers.pd.pdmanager import PDManager
 
 log = logging.getLogger(__name__)  # pylint: disable=invalid-name
@@ -15,6 +15,17 @@ log = logging.getLogger(__name__)  # pylint: disable=invalid-name
 class UsersHandler(RequestHandler, SessionMixin):
 
     def get(self):
+        """Get people
+        ---
+        summary: Get people
+        tags:
+          - "People"
+
+        responses:
+          200:
+            description: List of people
+            schema: GetUsersResponseSchema
+        """
         with self.make_session() as session:
             users = {'users': [user.to_json() for user in session.query(User).all()]}
             self.set_header('Content-Type', 'application/json')
@@ -59,35 +70,6 @@ async def get_user_from_remote(user_id):
     return User(**info)
 
 
-class PeopleTagHandler(RequestHandler, SessionMixin):
-
-    async def put(self):
-        try:
-            params = json.loads(self.request.body.decode())
-            log.info(json.dumps(params, indent=4))
-            overwrite_tags = bool(params.get('overwriteTags', False))
-            people_ids = list(map(int, params['people']))
-            photos_ids = list(map(int, params['photos']))
-        except Exception as ex:  # pylint: disable=broad-except
-            log.info(ex)
-            self.set_status(400)
-            self.write(json.dumps({'result': 'Error', 'cause': 'Wrong request', 'description': str(ex)}))
-            return
-
-        with self.make_session() as session:
-            people = session.query(User).filter(User.id.in_(people_ids)).all()
-            log.info([user.to_json() for user in people])
-            for photo in session.query(Photo).filter(Photo.id.in_(photos_ids)).all():
-                if not overwrite_tags:
-                    people.extend(photo.people)
-                    photo.people = list(set(people))  # remove duplicates
-                else:
-                    log.info('Overwriting tags')
-                    photo.people = people
-            session.commit()
-        self.write(json.dumps({'result': 'Success'}))
-
-
 class UsersUpdateHandler(RequestHandler, SessionMixin):
 
     async def get_user_info(self, user_id):
@@ -106,6 +88,17 @@ class UsersUpdateHandler(RequestHandler, SessionMixin):
         return user, user_info
 
     async def get(self, user_id):  # pylint: disable=arguments-differ
+        """Get user info
+        ---
+        summary: Get user info
+        tags:
+          - "People"
+
+        responses:
+          200:
+            description: Information about user
+            schema: GetUserResponseSchema
+        """
         try:
             _, user_info = await self.get_user_info(user_id)
             self.set_header('Content-Type', 'application/json')
@@ -117,6 +110,23 @@ class UsersUpdateHandler(RequestHandler, SessionMixin):
             return
 
     async def put(self, user_id):  # pylint: disable=arguments-differ
+        """Update user info
+        ---
+        summary: Update user info
+        tags:
+          - "People"
+
+        parameters:
+          - name: user_id
+            in: path
+            type: string
+            required: true
+
+        responses:
+          200:
+            description: Information about user
+            schema: GetUserResponseSchema
+        """
         try:
             user, _ = await self.get_user_info(user_id)
 

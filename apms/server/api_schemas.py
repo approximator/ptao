@@ -72,3 +72,11 @@ class PhotoSchema(ModelSchema):
 
 class GetPhotosResponseSchema(ApiResult.Schema):
     photos = fields.Nested(PhotoSchema, many=True)
+
+
+class GetUsersResponseSchema(ApiResult.Schema):
+    users = fields.Nested(UserSchema, many=True)
+
+
+class GetUserResponseSchema(ApiResult.Schema):
+    user = fields.Nested(UserSchema)
