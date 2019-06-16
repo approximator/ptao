@@ -14,6 +14,8 @@ aiodns
 aiofiles
 faker
 apispec
-apispec_webframeworks
-marshmallow
-marshmallow_sqlalchemy
+apispec-webframeworks
+marshmallow >=3.0.0rc9
+marshmallow-sqlalchemy
+marshmallow-dataclass >=6.0.0rc5
+marshmallow-enum
