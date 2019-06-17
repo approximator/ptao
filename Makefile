@@ -7,7 +7,7 @@ tests: virtualenv
 
 format: virtualenv
 	( . ${ENV_DIR}/bin/activate && \
-		find . -name ${ENV_DIR} -a -type d -prune -o -name '*.py' -print -exec yapf --style='{based_on_style: google, column_limit: 120}' -i {} \; )
+		yapf --style='{based_on_style: google, column_limit: 120}' -ir apms )
 
 lint: virtualenv
 	( . ${ENV_DIR}/bin/activate && pylint --rcfile=.pylintrc apms )
