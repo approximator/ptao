@@ -22,10 +22,16 @@ import tornado
 from tornado.web import Application, StaticFileHandler
 from tornado_sqlalchemy import make_session_factory
 
+from apispec import APISpec
+from apispec.ext.marshmallow import MarshmallowPlugin
+from apispec_webframeworks.tornado import TornadoPlugin
+
 from ..lib.config import config
 from .handlers.main import MainHandler
 from .handlers.photos import PhotosHandler
-from .handlers.users import UsersHandler, PeopleTagHandler, UsersUpdateHandler
+from .handlers.swagger import SwaggerSpecHandler
+from .handlers.users import UsersHandler, UsersUpdateHandler
+from apms.server.handlers.photos import PeopleTagHandler
 from .updater import Updater
 
 log = logging.getLogger(__name__)  # pylint: disable=invalid-name
@@ -37,24 +43,35 @@ class ApmsServer:
     def __init__(self, config_file=None):
         config.load_config(config_file if config_file is not None else config.default_config_file())
 
+        self._spec = APISpec(title='APMS API',
+                             version='1.0.0',
+                             openapi_version='2.0',
+                             info=dict(description='APMS API'),
+                             plugins=[
+                                 TornadoPlugin(),
+                                 MarshmallowPlugin(),
+                             ])
+
         api_urls = [
             (r"/api/photos", PhotosHandler),  #
             (r"/api/photos/tagPeople", PeopleTagHandler),  #
             (r"/api/users/(.+)/update", UsersUpdateHandler),  #
             (r"/api/users", UsersHandler),  #
-            (r'/photos(.*)', MainHandler),  #
-            (r'/people(.*)', MainHandler)  #
         ]
 
         other_urls = [
+            (r"/swagger/main.yml", SwaggerSpecHandler, dict(spec=self._spec)),  #
             (r'/files/photos/(.*)', StaticFileHandler, {
                 'path': config.photos_dir
-            }),  #
+            }),
             (r'/', MainHandler),
             (r'/(.*)', StaticFileHandler, {
                 'path': config.static_dir
             })
         ]
+
+        for url in api_urls:
+            self._spec.path(urlspec=url)
 
         self._session_factory = make_session_factory(config.db_connection_string)
         self._updater = Updater(config, self._session_factory)
