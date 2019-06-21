@@ -7,6 +7,11 @@ import PhotosPage from './photos';
 import PeoplePage from './people';
 import ScrollToTop from './components/scrollToTop';
 
+import SwaggerUI from 'swagger-ui-react'
+import 'swagger-ui-react/swagger-ui.css'
+
+const SwaggerPage = () => <SwaggerUI url='/swagger/main.yml' docExpansion='list' />
+
 class App extends Component {
     render() {
         return (
@@ -23,6 +28,9 @@ class App extends Component {
                             <Menu.Item as="span">
                                 <Link to="/people">People</Link>
                             </Menu.Item>
+                            <Menu.Item as="span">
+                                <Link to="/api-docs">API docs</Link>
+                            </Menu.Item>
                         </Container>
                     </Menu>
 
@@ -32,6 +40,7 @@ class App extends Component {
                                 <Redirect exact from="/" to="/photos" />
                                 <Route path="/photos" component={PhotosPage} />
                                 <Route path="/people" component={PeoplePage} />
+                                <Route path="/api-docs" component={SwaggerPage} />
                             </Switch>
                         </Container>
                     </ScrollToTop>
