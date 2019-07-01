@@ -210,23 +210,21 @@ class PeopleTagHandler(RequestHandler, SessionMixin):
             data = self.request.body.decode()
             log.info(data)
             params = PeopleTagRequest.Schema().loads(data)
+
+            with self.make_session() as session:
+                people = session.query(User).filter(User.id.in_(params.people)).all()
+                authors = session.query(User).filter(User.id.in_(params.authors)).all()
+                for photo in session.query(Photo).filter(Photo.id.in_(params.photos)).all():
+                    photo.people = people if params.overwrite_people_tags else list(set(people + photo.people))
+                    photo.authors = authors if params.overwrite_authors_tags else list(set(authors + photo.authors))
+                session.commit()
+
         except Exception as ex:  # pylint: disable=broad-except
             log.info(ex)
             resp = ApiResult('error', str(ex))
             self.set_status(400)
             self.write(ApiResult.Schema().dumps(resp))
             return
-
-        with self.make_session() as session:
-            people = session.query(User).filter(User.id.in_(params.people)).all()
-            for photo in session.query(Photo).filter(Photo.id.in_(params.photos)).all():
-                if not params.overwrite_tags:
-                    people.extend(photo.people)
-                    photo.people = list(set(people))  # remove duplicates
-                else:
-                    log.info('Overwriting tags')
-                    photo.people = people
-            session.commit()
 
         resp = ApiResult('success', 'Tags have been added')
         self.write(ApiResult.Schema().dumps(resp))
