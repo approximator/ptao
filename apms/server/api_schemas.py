@@ -27,9 +27,11 @@ from ..lib.db.database import Tag, Album, User, Photo
 
 @marshmallow_dataclass.dataclass
 class PeopleTagRequest:
-    people: List[int]
     photos: List[int]
-    overwrite_tags: bool = field(metadata={'required': False}, default=False)
+    people: List[int]
+    authors: List[int]
+    overwrite_people_tags: bool = field(metadata={'required': False}, default=False)
+    overwrite_authors_tags: bool = field(metadata={'required': False}, default=False)
     Schema: ClassVar[Type[Schema]] = Schema
 
 

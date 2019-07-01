@@ -14,7 +14,9 @@ const initialState = {
     peopleDropdownList: [],
     currentUser: undefined,
     userInfoOpen: false,
-    success: 'unknown',
+    result: 'unknown',
+    message: '',
+    showMessage: false,
 
     tagUsersDialogOpen: false
 };
@@ -41,13 +43,14 @@ export default function(state = initialState, action) {
             return {
                 ...state,
                 photos: action.payload.photos,
-                tagUsersDialogOpen: true
+                isOpen: true
             };
 
         case CLOSE_TAG_PEOPLE_DIALOG:
             return {
                 ...state,
-                tagUsersDialogOpen: false
+                showMessage: false,
+                isOpen: false
             };
 
         case OPEN_USER_INFO:
@@ -79,12 +82,14 @@ export default function(state = initialState, action) {
         case SAVE_PEOPLE_TAGS:
             return {
                 ...state,
-                success: action.payload.result
+                ...action.payload,
+                showMessage: true
             };
 
         case UPDATE_USER_INFO_DEFAULT_PERSONS:
             return {
-                ...state
+                ...state,
+                ...action.payload
             };
 
         default:

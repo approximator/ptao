@@ -109,11 +109,13 @@ export const pauseUpdate = (user_id, pause) => dispatch => {
     });
 };
 
-export const saveUserTags = (photos, people, overwriteTags) => dispatch => {
+export const saveUserTags = (photos, people, authors, overwritePeopleTags, overwriteAuthorsTags) => dispatch => {
     const data = {
         photos: photos.map(ph => ph.id),
         people: people,
-        overwriteTags: overwriteTags
+        authors: authors,
+        overwrite_people_tags: overwritePeopleTags,
+        overwrite_authors_tags: overwriteAuthorsTags
     };
 
     const options = {
@@ -125,20 +127,22 @@ export const saveUserTags = (photos, people, overwriteTags) => dispatch => {
     fetch('/api/photos/tagPeople', options)
         .then(response => response.json())
         .then(body => {
+            console.log(body);
             dispatch({
                 type: SAVE_PEOPLE_TAGS,
                 payload: {
-                    result: body.result.toLowerCase()
-                    // reason: 'Success',
-                    // message: 'Success',
-                    // paused: pause,
-                    // user_id: user_id
+                    ...body
                 }
             });
         })
         .catch(err => {
             console.error(err);
-            this.setState({ success: err.toLowerCase() });
+            dispatch({
+                type: SAVE_PEOPLE_TAGS,
+                payload: {
+                    err
+                }
+            });
         });
 };
 
