@@ -31,7 +31,7 @@ from .handlers.main import MainHandler
 from .handlers.photos import PhotosHandler
 from .handlers.swagger import SwaggerSpecHandler
 from .handlers.users import UsersHandler, UsersUpdateHandler
-from apms.server.handlers.photos import PeopleTagHandler
+from .handlers.photos import PeopleTagHandler
 from .updater import Updater
 
 log = logging.getLogger(__name__)  # pylint: disable=invalid-name

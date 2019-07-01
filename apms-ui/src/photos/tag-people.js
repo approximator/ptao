@@ -1,9 +1,19 @@
 import React, { Component } from 'react';
-import { Item, Grid, Modal, Dropdown, Button, Icon, Checkbox, Label, Message } from 'semantic-ui-react';
+import { Item, Grid, Modal, Dropdown, Button, Icon, Checkbox, Label, Message, Segment } from 'semantic-ui-react';
 import { connect } from 'react-redux';
 import { fetchUsers, tagPeopleDialogClose, saveUserTags } from '../actions/usersAction';
 
 class TagPeopleDialog extends Component {
+    constructor(props) {
+        super(props);
+        this.state = {
+            selectedPeople: [],
+            selectedAuthors: [],
+            overwritePeopleTags: false,
+            overwriteAuthorsTags: false
+        };
+    }
+
     componentWillMount() {
         console.log('componentWillMount. Props', this.props);
         this.props.fetchUsers();
@@ -14,15 +24,26 @@ class TagPeopleDialog extends Component {
             return null;
         }
         return (
-            <Modal size="large" open={this.props.isOpen} onClose={this.props.tagPeopleDialogClose}>
+            <Modal
+                size="large"
+                style={{ minHeight: '80%' }}
+                open={this.props.isOpen}
+                onClose={this.props.tagPeopleDialogClose}
+            >
                 <Modal.Header>
-                    {this.props.success !== 'unknown' && (
-                        <Message floating success={this.state.success === 'success'} header={this.state.success} />
+                    {this.props.showMessage && (
+                        <Message
+                            floating
+                            success={this.props.result === 'success'}
+                            header={this.props.message}
+                            style={{ position: 'fixed', left: 1, bottom: 1 }}
+                        />
                     )}
+                    <Icon name="tag" />
                     Tag People
                 </Modal.Header>
                 <Modal.Content scrolling>
-                    <Grid columns={2} relaxed divided>
+                    <Grid columns={2} relaxed divided style={{ height: '100vh' }}>
                         <Grid.Column>
                             <Item.Group>
                                 {this.props.photos.map(ph => (
@@ -40,7 +61,7 @@ class TagPeopleDialog extends Component {
                                         <Item.Content verticalAlign="middle">
                                             {ph.people_tags.map(tag => (
                                                 <Label
-                                                    key={`${ph.id}_label`}
+                                                    key={`${ph.id}_${tag.id}_label`}
                                                     icon="user"
                                                     content={`${tag.first_name} ${tag.last_name}`}
                                                 />
@@ -51,22 +72,50 @@ class TagPeopleDialog extends Component {
                             </Item.Group>
                         </Grid.Column>
                         <Grid.Column>
-                            <Checkbox
-                                toggle
-                                label="Overwrite"
-                                onChange={(e, { checked }) => this.setState({ overwriteTags: checked })}
-                            />
-                            <br />
-                            <Dropdown
-                                search
-                                selection
-                                multiple
-                                placeholder="Choose someone"
-                                options={this.props.peopleDropdownList}
-                                onChange={(e, { value }) => {
-                                    this.setState({ selectedUsers: value });
-                                }}
-                            />
+                            <Segment padded>
+                                <Label attached="top left">
+                                    <Icon name="user" />
+                                    People on photos
+                                </Label>
+                                <Checkbox
+                                    toggle
+                                    label="Overwrite"
+                                    onChange={(e, { checked }) => this.setState({ overwritePeopleTags: checked })}
+                                />
+                                <br />
+                                <Dropdown
+                                    search
+                                    selection
+                                    multiple
+                                    placeholder="Choose someone"
+                                    options={this.props.peopleDropdownList}
+                                    onChange={(e, { value }) => {
+                                        this.setState({ selectedPeople: value });
+                                    }}
+                                />
+                            </Segment>
+                            <Segment padded>
+                                <Label attached="top left">
+                                    <Icon name="copyright" />
+                                    Authors
+                                </Label>
+                                <Checkbox
+                                    toggle
+                                    label="Overwrite"
+                                    onChange={(e, { checked }) => this.setState({ overwriteAuthorsTags: checked })}
+                                />
+                                <br />
+                                <Dropdown
+                                    search
+                                    selection
+                                    multiple
+                                    placeholder="Choose someone"
+                                    options={this.props.peopleDropdownList}
+                                    onChange={(e, { value }) => {
+                                        this.setState({ selectedAuthors: value });
+                                    }}
+                                />
+                            </Segment>
                         </Grid.Column>
                     </Grid>
                 </Modal.Content>
@@ -77,14 +126,16 @@ class TagPeopleDialog extends Component {
                         onClick={() =>
                             this.props.saveUserTags(
                                 this.props.photos,
-                                this.state.selectedUsers,
-                                this.state.overwriteTags
+                                this.state.selectedPeople,
+                                this.state.selectedAuthors,
+                                this.state.overwritePeopleTags,
+                                this.state.overwriteAuthorsTags
                             )
                         }
                     >
                         <Icon name="checkmark" /> Save
                     </Button>
-                    <Button color="yellow" inverted onClick={this.onClose}>
+                    <Button color="yellow" inverted onClick={this.props.tagPeopleDialogClose}>
                         <Icon name="close" /> Close
                     </Button>
                 </Modal.Actions>
@@ -95,10 +146,7 @@ class TagPeopleDialog extends Component {
 
 function mapStateToProps(state) {
     return {
-        photos: state.userReducer.photos,
-        isOpen: state.userReducer.tagUsersDialogOpen,
-        peopleDropdownList: state.userReducer.peopleDropdownList,
-        success: state.userReducer.success
+        ...state.userReducer
     };
 }
 

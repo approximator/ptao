@@ -56,6 +56,32 @@ const Image = ({ index, onClick, photo, margin, direction, top, left }) => {
             <style>{`.not-selected:hover{outline:2px solid #06befa}`}</style>
 
             <div style={captionStyle}>
+                <NavLink
+                    key={photo.owner_id}
+                    style={peopleTagsStyle}
+                    to={{
+                        pathname: '/photos',
+                        search: makeSearchParams({ page: 1, owner_id: photo.owner_id }, window.location.search)
+                    }}
+                >
+                    <Icon name="rss" />
+                    {photo.onwer_name}
+                </NavLink>
+
+                {photo.authors.map(author => (
+                    <NavLink
+                        key={author.id}
+                        style={peopleTagsStyle}
+                        to={{
+                            pathname: '/photos',
+                            search: makeSearchParams({ page: 1, photos_by: author.id }, window.location.search)
+                        }}
+                    >
+                        <Icon name="copyright" />
+                        {`${author.first_name} ${author.last_name}`}
+                    </NavLink>
+                ))}
+
                 {photo.people_tags.map(tag => (
                     <NavLink
                         key={tag.id}
@@ -69,25 +95,14 @@ const Image = ({ index, onClick, photo, margin, direction, top, left }) => {
                         {`${tag.first_name} ${tag.last_name}`}
                     </NavLink>
                 ))}
-                <NavLink
-                    key={photo.owner_id}
-                    style={peopleTagsStyle}
-                    to={{
-                        pathname: '/photos',
-                        search: makeSearchParams({ page: 1, owner_id: photo.owner_id }, window.location.search)
-                    }}
-                >
-                    <Icon name="rss" />
-                    {photo.onwer_name}
-                </NavLink>
             </div>
         </div>
     );
 };
 
-const hostLinkStyle = {
-    pointerEvents: 'auto'
-};
+// const hostLinkStyle = {
+//     pointerEvents: 'auto'
+// };
 
 const peopleTagsStyle = {
     pointerEvents: 'auto',
