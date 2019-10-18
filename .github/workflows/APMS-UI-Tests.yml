@@ -1,0 +1,30 @@
+name: APMS UI Tests
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      max-parallel: 4
+      matrix:
+        node: ["10", "8"]
+        os: [ubuntu-latest, windows-latest]
+
+    steps:
+      - uses: actions/checkout@master
+
+      - name: Setup Node ${{ matrix.node }}
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.node }}
+
+      - name: Install dependencies
+        run: |
+          cd apms-ui
+          npm install
+
+      - name: Build
+        run: |
+          cd apms-ui
+          npm run build
