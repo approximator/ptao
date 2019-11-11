@@ -11,7 +11,7 @@ from tornado_sqlalchemy import SessionMixin
 from apms.lib.config import config
 from apms.lib.db.database import Photo, User
 
-from apms.server.api_schemas import PeopleTagRequest, ApiResult
+from apms.server.api_schemas import PeopleTagRequest, ApiResult, DeletePhotosRequest
 
 log = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
@@ -136,12 +136,11 @@ class PhotosHandler(RequestHandler, SessionMixin):
         summary: Delete photos
         tags:
           - "Photos"
-        parameters:
-          - name: data
-            in: body
-            description: List of photos to delete
-            required: true
-            schema: DeletePhotosRequest
+        requestBody:
+          content:
+             application/json:
+                description: List of photos to delete
+                schema: DeletePhotosRequest
 
         responses:
           200:
@@ -150,7 +149,9 @@ class PhotosHandler(RequestHandler, SessionMixin):
             schema: ApiResult
         """
         try:
-            photos_to_delete = json.loads(self.request.body.decode())['photos']
+            data = self.request.body.decode()
+            log.info(data)
+            photos_to_delete = DeletePhotosRequest.Schema().loads(data).photos
         except Exception as ex:  # pylint: disable=broad-except
             log.info(ex)
             resp = ApiResult('error', str(ex))
@@ -158,7 +159,7 @@ class PhotosHandler(RequestHandler, SessionMixin):
             self.write(ApiResult.Schema().dumps(resp))
             return
 
-        log.info('Going to remove {}'.format(photos_to_delete))
+        log.info(f'Going to remove {photos_to_delete}')
         with self.make_session() as session:
             query = session.query(Photo).filter(Photo.id.in_(photos_to_delete))
             count = query.count()
@@ -193,12 +194,11 @@ class PeopleTagHandler(RequestHandler, SessionMixin):
         summary: Tag people on photo
         tags:
           - "Photos"
-        parameters:
-          - name: data
-            in: body
-            description: List of photos to tad along with list of people to add to each photo
-            required: true
-            schema: PeopleTagRequest
+        requestBody:
+          content:
+             application/json:
+                description: List of photos to tad along with list of people to add to each photo
+                schema: PeopleTagRequest
 
         responses:
           200:

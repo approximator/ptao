@@ -94,6 +94,13 @@ class UsersUpdateHandler(RequestHandler, SessionMixin):
         tags:
           - "People"
 
+        parameters:
+          - name: user_id
+            in: path
+            schema:
+              type: string
+            required: true
+
         responses:
           200:
             description: Information about user
@@ -119,7 +126,8 @@ class UsersUpdateHandler(RequestHandler, SessionMixin):
         parameters:
           - name: user_id
             in: path
-            type: string
+            schema:
+              type: string
             required: true
 
         responses:

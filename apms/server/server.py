@@ -44,8 +44,8 @@ class ApmsServer:
         config.load_config(config_file if config_file is not None else config.default_config_file())
 
         self._spec = APISpec(title='APMS API',
-                             version='1.0.0',
-                             openapi_version='2.0',
+                             version='1.0.1',
+                             openapi_version='3.0.0',
                              info=dict(description='APMS API'),
                              plugins=[
                                  TornadoPlugin(),
@@ -60,11 +60,14 @@ class ApmsServer:
         ]
 
         other_urls = [
-            (r"/swagger/main.yml", SwaggerSpecHandler, dict(spec=self._spec)),  #
+            (r"/swagger/main.json", SwaggerSpecHandler, dict(spec=self._spec)),  #
             (r'/files/photos/(.*)', StaticFileHandler, {
                 'path': config.photos_dir
             }),
             (r'/', MainHandler),
+            (r'/photos', MainHandler),
+            (r'/people', MainHandler),
+            (r'/api-docs', MainHandler),
             (r'/(.*)', StaticFileHandler, {
                 'path': config.static_dir
             })
