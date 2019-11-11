@@ -20,10 +20,12 @@ class MainHandler(RequestHandler):
         tags:
           - "Files"
         parameters:
-              - name: file_name
-                in: path
-                type: string
-                required: false
+          - name: file_name
+            required: false
+            in: path
+            schema:
+              type: string
+
         responses:
           200:
             description: File content

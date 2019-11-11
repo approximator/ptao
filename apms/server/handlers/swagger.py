@@ -1,3 +1,4 @@
+import json
 import logging
 
 from tornado.web import RequestHandler
@@ -7,7 +8,7 @@ log = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 class SwaggerSpecHandler(RequestHandler):
     """
-    Returns swagger docs yml
+    Returns swagger docs json
     """
 
     def initialize(self, spec):
@@ -20,5 +21,5 @@ class SwaggerSpecHandler(RequestHandler):
         """
         Handler for /swagger/main.yml
         """
-        self.set_header('Content-Type', 'application/x-yaml')
-        self.write(self._spec.to_yaml())
+        self.set_header('Content-Type', 'application/json')
+        self.write(json.dumps(self._spec.to_dict()))

@@ -10,7 +10,7 @@ import ScrollToTop from './components/scrollToTop';
 import SwaggerUI from 'swagger-ui-react';
 import 'swagger-ui-react/swagger-ui.css';
 
-const SwaggerPage = () => <SwaggerUI url="/swagger/main.yml" docExpansion="list" />;
+const SwaggerPage = () => <SwaggerUI url="/swagger/main.json" docExpansion="list" />;
 
 class App extends Component {
     render() {
