@@ -151,18 +151,15 @@ class Updater:
     def tag_people(self):
         log.info('Start tag_people')
         session = self._session_factory.make_session()
-        for user in session.query(User).filter(User.default_person_to_tag).all():
+        for user in session.query(User).order_by(User.date_added.desc()).all():
             log.info(f'Tag photos of {user.first_name} {user.last_name}')
+            person_to_tag = session.query(User).filter(User.id == user.default_person_to_tag).all()
+            author = session.query(User).filter(User.id == user.default_author).all()
             for photo in user.photos:
-                people = [session.query(User).filter(User.id == user.default_person_to_tag).one()]
-                people.extend(photo.people)
-                photo.people = list(set(people))
-        for user in session.query(User).filter(User.default_author).all():
-            log.info(f'Tag photos of {user.first_name} {user.last_name}')
-            for photo in user.photos:
-                authors = [session.query(User).filter(User.id == user.default_author).one()]
-                authors.extend(photo.authors)
-                photo.authors = list(set(authors))
+                if person_to_tag:
+                    photo.people = list(set(photo.people + person_to_tag))
+                if author:
+                    photo.authors = list(set(photo.authors + author))
         session.commit()
 
     async def add_new_photos(self, user, db_session):
