@@ -23,6 +23,8 @@ from sqlalchemy import Column, Integer, UnicodeText, DateTime, Boolean, ForeignK
 from sqlalchemy.orm import relationship
 from tornado_sqlalchemy import declarative_base
 
+from transliterate import translit
+
 # import logging
 # logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
 
@@ -57,6 +59,8 @@ def obj_to_json(obj):
     for key, _ in data.items():
         if key.startswith('date'):
             data[key] = to_unit_timestamp(data[key])
+        if key in ['first_name', 'last_name']:
+            data[key] = f"{data[key]} ({translit(data[key], 'ru', reversed=True)})"
     return data
 
 
