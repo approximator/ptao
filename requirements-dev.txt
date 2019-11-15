@@ -1,0 +1,7 @@
+-e .
+pytest
+pylint
+yapf
+alembic
+faker
+tox
