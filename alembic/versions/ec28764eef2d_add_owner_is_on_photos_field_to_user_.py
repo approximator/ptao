@@ -8,7 +8,15 @@ Create Date: 2018-10-05 17:41:22.627838
 from alembic import op
 import sqlalchemy as sa
 
-from sqlalchemy import Column, Integer, UnicodeText, DateTime, Boolean, ForeignKey, Table
+from sqlalchemy import (
+    Column,
+    Integer,
+    UnicodeText,
+    DateTime,
+    Boolean,
+    ForeignKey,
+    Table,
+)
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
 
@@ -16,20 +24,20 @@ BASE = declarative_base()
 Session = sessionmaker()
 
 # revision identifiers, used by Alembic.
-revision = 'ec28764eef2d'
-down_revision = 'add6265f2306'
+revision = "ec28764eef2d"
+down_revision = "add6265f2306"
 branch_labels = None
 depends_on = None
 
 
 class OldUser(BASE):
-    __tablename__ = 'old_users'
+    __tablename__ = "old_users"
     id = Column(Integer, nullable=False, primary_key=True, autoincrement=True)
     kind = Column(Integer, nullable=False, default=0)  # 0 - user, 1 - group
-    first_name = Column(UnicodeText(), nullable=False, default='')
-    last_name = Column(UnicodeText(), nullable=False, default='')
+    first_name = Column(UnicodeText(), nullable=False, default="")
+    last_name = Column(UnicodeText(), nullable=False, default="")
     domain = Column(UnicodeText(), nullable=True)
-    nick_name = Column(UnicodeText(), nullable=True, default='')
+    nick_name = Column(UnicodeText(), nullable=True, default="")
     site = Column(UnicodeText(), nullable=True)
     status_str = Column(UnicodeText(), nullable=True)
     about = Column(UnicodeText(), nullable=True)
@@ -48,19 +56,19 @@ class OldUser(BASE):
     updating_interval = Column(Integer, nullable=False, default=60)
     rating = Column(Integer, nullable=False, default=0)
     sex = Column(Integer, nullable=False, default=5)
-    photo = Column(UnicodeText(), nullable=False, default='')
+    photo = Column(UnicodeText(), nullable=False, default="")
     mobile_phone = Column(UnicodeText(), nullable=True)
     filter_by_albums = Column(UnicodeText(), nullable=True)
 
 
 class User(BASE):
-    __tablename__ = 'users'
+    __tablename__ = "users"
     id = Column(Integer, nullable=False, primary_key=True, autoincrement=True)
     kind = Column(Integer, nullable=False, default=0)  # 0 - user, 1 - group
-    first_name = Column(UnicodeText(), nullable=False, default='')
-    last_name = Column(UnicodeText(), nullable=False, default='')
+    first_name = Column(UnicodeText(), nullable=False, default="")
+    last_name = Column(UnicodeText(), nullable=False, default="")
     domain = Column(UnicodeText(), nullable=True)
-    nick_name = Column(UnicodeText(), nullable=True, default='')
+    nick_name = Column(UnicodeText(), nullable=True, default="")
     site = Column(UnicodeText(), nullable=True)
     status_str = Column(UnicodeText(), nullable=True)
     about = Column(UnicodeText(), nullable=True)
@@ -79,14 +87,14 @@ class User(BASE):
     updating_interval = Column(Integer, nullable=False, default=60)
     rating = Column(Integer, nullable=False, default=0)
     sex = Column(Integer, nullable=False, default=5)
-    photo = Column(UnicodeText(), nullable=False, default='')
+    photo = Column(UnicodeText(), nullable=False, default="")
     mobile_phone = Column(UnicodeText(), nullable=True)
     filter_by_albums = Column(UnicodeText(), nullable=True)
     owner_is_on_photos = Column(Boolean(), nullable=False, default=False)
 
 
 def upgrade():
-    op.rename_table('users', 'old_users')
+    op.rename_table("users", "old_users")
 
     bind = op.get_bind()
     session = Session(bind=bind)
@@ -122,10 +130,11 @@ def upgrade():
             sex=old_user.sex,
             photo=old_user.photo,
             mobile_phone=old_user.mobile_phone,
-            filter_by_albums=old_user.filter_by_albums)
+            filter_by_albums=old_user.filter_by_albums,
+        )
         session.add(user)
     session.commit()
-    op.drop_table('old_users')
+    op.drop_table("old_users")
 
 
 def downgrade():

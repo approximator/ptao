@@ -8,7 +8,15 @@ Create Date: 2018-10-09 17:10:52.911527
 from alembic import op
 import sqlalchemy as sa
 
-from sqlalchemy import Column, Integer, UnicodeText, DateTime, Boolean, ForeignKey, Table
+from sqlalchemy import (
+    Column,
+    Integer,
+    UnicodeText,
+    DateTime,
+    Boolean,
+    ForeignKey,
+    Table,
+)
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
 
@@ -16,29 +24,41 @@ BASE = declarative_base()
 Session = sessionmaker()
 
 # revision identifiers, used by Alembic.
-revision = '10f730c6ee70'
-down_revision = 'ec28764eef2d'
+revision = "10f730c6ee70"
+down_revision = "ec28764eef2d"
 branch_labels = None
 depends_on = None
 
-photos_tags = Table('__photos_tags__', BASE.metadata, Column('photo_id', ForeignKey('photos.id'), primary_key=True),
-                    Column('tag_id', ForeignKey('tags.id'), primary_key=True))
+photos_tags = Table(
+    "__photos_tags__",
+    BASE.metadata,
+    Column("photo_id", ForeignKey("photos.id"), primary_key=True),
+    Column("tag_id", ForeignKey("tags.id"), primary_key=True),
+)
 
-photos_people = Table('__photos_people__', BASE.metadata, Column('photo_id', ForeignKey('photos.id'), primary_key=True),
-                      Column('user_id', ForeignKey('users.id'), primary_key=True))
+photos_people = Table(
+    "__photos_people__",
+    BASE.metadata,
+    Column("photo_id", ForeignKey("photos.id"), primary_key=True),
+    Column("user_id", ForeignKey("users.id"), primary_key=True),
+)
 
-photos_authors = Table('__photos_authors__', BASE.metadata, Column(
-    'photo_id', ForeignKey('photos.id'), primary_key=True), Column('user_id', ForeignKey('users.id'), primary_key=True))
+photos_authors = Table(
+    "__photos_authors__",
+    BASE.metadata,
+    Column("photo_id", ForeignKey("photos.id"), primary_key=True),
+    Column("user_id", ForeignKey("users.id"), primary_key=True),
+)
 
 # photos_albums = Table('__photos_albums__', BASE.metadata, Column('photo_id', ForeignKey('photos.id'), primary_key=True),
 #                       Column('album_id', ForeignKey('albums.id'), primary_key=True))
 
 
 class OldPhoto(BASE):
-    __tablename__ = 'old_photos'
+    __tablename__ = "old_photos"
     id = Column(Integer, nullable=False, primary_key=True, autoincrement=True)
 
-    owner_id = Column(Integer, ForeignKey('users.id'))
+    owner_id = Column(Integer, ForeignKey("users.id"))
 
     origin_id = Column(Integer, nullable=False)
     rating = Column(Integer, nullable=False, default=0)
@@ -61,13 +81,13 @@ class OldPhoto(BASE):
 
 
 class OldUser(BASE):
-    __tablename__ = 'old_users'
+    __tablename__ = "old_users"
     id = Column(Integer, nullable=False, primary_key=True, autoincrement=True)
     kind = Column(Integer, nullable=False, default=0)  # 0 - user, 1 - group
-    first_name = Column(UnicodeText(), nullable=False, default='')
-    last_name = Column(UnicodeText(), nullable=False, default='')
+    first_name = Column(UnicodeText(), nullable=False, default="")
+    last_name = Column(UnicodeText(), nullable=False, default="")
     domain = Column(UnicodeText(), nullable=True)
-    nick_name = Column(UnicodeText(), nullable=True, default='')
+    nick_name = Column(UnicodeText(), nullable=True, default="")
     site = Column(UnicodeText(), nullable=True)
     status_str = Column(UnicodeText(), nullable=True)
     about = Column(UnicodeText(), nullable=True)
@@ -86,19 +106,19 @@ class OldUser(BASE):
     updating_interval = Column(Integer, nullable=False, default=60)
     rating = Column(Integer, nullable=False, default=0)
     sex = Column(Integer, nullable=False, default=5)
-    photo = Column(UnicodeText(), nullable=False, default='')
+    photo = Column(UnicodeText(), nullable=False, default="")
     mobile_phone = Column(UnicodeText(), nullable=True)
     filter_by_albums = Column(UnicodeText(), nullable=True)
     owner_is_on_photos = Column(Boolean(), nullable=False, default=False)
 
 
 class Photo(BASE):
-    __tablename__ = 'photos'
+    __tablename__ = "photos"
     id = Column(Integer, nullable=False, primary_key=True, autoincrement=True)
-    people = relationship('User', secondary=photos_people, back_populates='photos_of')
-    authors = relationship('User', secondary=photos_authors, back_populates='photos_by')
+    people = relationship("User", secondary=photos_people, back_populates="photos_of")
+    authors = relationship("User", secondary=photos_authors, back_populates="photos_by")
 
-    owner_id = Column(Integer, ForeignKey('users.id'))
+    owner_id = Column(Integer, ForeignKey("users.id"))
     owner = relationship("User", back_populates="photos")
 
     origin_id = Column(Integer, nullable=False)
@@ -122,13 +142,13 @@ class Photo(BASE):
 
 
 class User(BASE):
-    __tablename__ = 'users'
+    __tablename__ = "users"
     id = Column(Integer, nullable=False, primary_key=True, autoincrement=True)
     kind = Column(Integer, nullable=False, default=0)  # 0 - user, 1 - group
-    first_name = Column(UnicodeText(), nullable=False, default='')
-    last_name = Column(UnicodeText(), nullable=False, default='')
+    first_name = Column(UnicodeText(), nullable=False, default="")
+    last_name = Column(UnicodeText(), nullable=False, default="")
     domain = Column(UnicodeText(), nullable=True)
-    nick_name = Column(UnicodeText(), nullable=True, default='')
+    nick_name = Column(UnicodeText(), nullable=True, default="")
     site = Column(UnicodeText(), nullable=True)
     status_str = Column(UnicodeText(), nullable=True)
     about = Column(UnicodeText(), nullable=True)
@@ -147,21 +167,23 @@ class User(BASE):
     updating_interval = Column(Integer, nullable=False, default=60)
     rating = Column(Integer, nullable=False, default=0)
     sex = Column(Integer, nullable=False, default=5)
-    photo = Column(UnicodeText(), nullable=False, default='')
+    photo = Column(UnicodeText(), nullable=False, default="")
     mobile_phone = Column(UnicodeText(), nullable=True)
     filter_by_albums = Column(UnicodeText(), nullable=True)
-    default_person_to_tag = Column(Integer, ForeignKey('users.id'), nullable=True)
-    default_author = Column(Integer, ForeignKey('users.id'), nullable=True)
+    default_person_to_tag = Column(Integer, ForeignKey("users.id"), nullable=True)
+    default_author = Column(Integer, ForeignKey("users.id"), nullable=True)
 
     # albums = relationship('Album', back_populates='owner')
-    photos = relationship('Photo', back_populates='owner')
-    photos_of = relationship('Photo', secondary=photos_people, back_populates='people')
-    photos_by = relationship('Photo', secondary=photos_authors, back_populates='authors')
+    photos = relationship("Photo", back_populates="owner")
+    photos_of = relationship("Photo", secondary=photos_people, back_populates="people")
+    photos_by = relationship(
+        "Photo", secondary=photos_authors, back_populates="authors"
+    )
 
 
 def upgrade():
-    op.rename_table('users', 'old_users')
-    op.rename_table('photos', 'old_photos')
+    op.rename_table("users", "old_users")
+    op.rename_table("photos", "old_photos")
 
     bind = op.get_bind()
     session = Session(bind=bind)
@@ -199,7 +221,8 @@ def upgrade():
             sex=old_user.sex,
             photo=old_user.photo,
             mobile_phone=old_user.mobile_phone,
-            filter_by_albums=old_user.filter_by_albums)
+            filter_by_albums=old_user.filter_by_albums,
+        )
 
         if old_user.owner_is_on_photos:
             user.default_person_to_tag = old_user.id
@@ -223,12 +246,13 @@ def upgrade():
             date_added=old_photo.date_added,
             width=old_photo.width,
             height=old_photo.height,
-            text=old_photo.text)
+            text=old_photo.text,
+        )
         session.add(photo)
 
     session.commit()
-    op.drop_table('old_users')
-    op.drop_table('old_photos')
+    op.drop_table("old_users")
+    op.drop_table("old_photos")
 
 
 def downgrade():

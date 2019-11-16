@@ -19,6 +19,7 @@ fileConfig(config.config_file_name)
 # target_metadata = mymodel.Base.metadata
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 from apms.lib.db.database import BASE
+
 target_metadata = BASE.metadata
 
 # other values from the config, defined by the needs of env.py,
@@ -54,7 +55,10 @@ def run_migrations_online():
 
     """
     connectable = engine_from_config(
-        config.get_section(config.config_ini_section), prefix='sqlalchemy.', poolclass=pool.NullPool)
+        config.get_section(config.config_ini_section),
+        prefix="sqlalchemy.",
+        poolclass=pool.NullPool,
+    )
 
     with connectable.connect() as connection:
         context.configure(connection=connection, target_metadata=target_metadata)

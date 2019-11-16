@@ -47,16 +47,16 @@ class Updater:
         dirname = os.path.join(self._photos_dir, photo.dir_name)
         filename = os.path.join(dirname, photo.file_name)
         if not os.path.exists(filename):
-            log.info('File {} does not exists'.format(filename))
+            log.info("File {} does not exists".format(filename))
             photo_size = 100, 100
         else:
             try:
                 photo_size = Image.open(filename).size
             except Exception as ex:  # pylint: disable=broad-except
-                log.error('{}: {}'.format(type(ex), ex))
+                log.error("{}: {}".format(type(ex), ex))
                 photo_size = 100, 100
 
-        log.info('Size of photo {}: {}'.format(filename, photo_size))
+        log.info("Size of photo {}: {}".format(filename, photo_size))
         return photo_size
 
     async def download_photo(self, photo, url):
@@ -65,95 +65,113 @@ class Updater:
             filename = os.path.join(dirname, photo.file_name)
 
             if os.path.exists(filename):
-                log.warning('File exists: {}'.format(filename))
+                log.warning("File exists: {}".format(filename))
                 return
 
             if not os.path.exists(dirname):
-                log.info('Making directory')
+                log.info("Making directory")
                 os.makedirs(dirname)
         except Exception as ex:  # pylint: disable=broad-except
-            log.error('{}: {}.  Photo: {}'.format(type(ex), ex, photo))
+            log.error("{}: {}.  Photo: {}".format(type(ex), ex, photo))
             raise
 
-        log.info('Downloading {} to {}'.format(url, filename))
+        log.info("Downloading {} to {}".format(url, filename))
 
         async def download():
             async with aiohttp.ClientSession() as session:
                 async with session.get(url) as resp:
                     data = await resp.read()
-                    async with aiofiles.open(filename, 'wb') as photo_file:
+                    async with aiofiles.open(filename, "wb") as photo_file:
                         await photo_file.write(data)
 
         await PDManager.retry_if_failed(download, 20)
 
     @staticmethod
     def get_photo_url(info):  # pylint: disable=too-many-return-statements
-        if info.get('photo_2560', None) is not None:
-            return info['photo_2560']
+        if info.get("photo_2560", None) is not None:
+            return info["photo_2560"]
 
-        if info.get('photo_1280', None) is not None:
-            return info['photo_1280']
+        if info.get("photo_1280", None) is not None:
+            return info["photo_1280"]
 
-        if info.get('photo_807', None) is not None:
-            return info['photo_807']
+        if info.get("photo_807", None) is not None:
+            return info["photo_807"]
 
-        if info.get('photo_604', None) is not None:
-            return info['photo_604']
+        if info.get("photo_604", None) is not None:
+            return info["photo_604"]
 
-        if info.get('photo_130', None) is not None:
-            return info['photo_130']
+        if info.get("photo_130", None) is not None:
+            return info["photo_130"]
 
-        if info.get('photo_75', None) is not None:
-            return info['photo_75']
+        if info.get("photo_75", None) is not None:
+            return info["photo_75"]
 
         return None
 
     async def update_photos_of_next_user(self):
         while True:
             await asyncio.sleep(10)
-            log.info('Updating photos of next user')
+            log.info("Updating photos of next user")
             onedayearly = datetime.timedelta(hours=8)
             since = datetime.datetime.now() - onedayearly
 
             session = self._session_factory.make_session()
-            user = session.query(User).filter(
-                and_(
-                    or_(User.date_photos_updated < since, User.date_photos_updated == None),  # pylint: disable=singleton-comparison
-                    not_(User.pause_update))).order_by(User.date_photos_updated).first()
+            user = (
+                session.query(User)
+                .filter(
+                    and_(
+                        or_(
+                            User.date_photos_updated < since,
+                            User.date_photos_updated == None,
+                        ),  # pylint: disable=singleton-comparison
+                        not_(User.pause_update),
+                    )
+                )
+                .order_by(User.date_photos_updated)
+                .first()
+            )
 
             if user is None:
-                log.info('No users to update')
+                log.info("No users to update")
                 continue
 
             await self.update_photos_of(user, session)
 
     async def update_photos_of(self, user, db_session):
-        log.info('Going to update {} {}'.format(user.first_name, user.last_name))
-        log.info('Was updated {} minutes ago'.format(datetime.datetime.now() -
-                                                     user.date_photos_updated if user.date_photos_updated else 'never'))
+        log.info("Going to update {} {}".format(user.first_name, user.last_name))
+        log.info(
+            "Was updated {} minutes ago".format(
+                datetime.datetime.now() - user.date_photos_updated
+                if user.date_photos_updated
+                else "never"
+            )
+        )
 
         await self.add_new_photos(user, db_session)
 
     @staticmethod
     def photo_from_json(info):
         return Photo(
-            origin_id=info['id'],
+            origin_id=info["id"],
             url=Updater.get_photo_url(info),
-            dir_name='{}'.format(info['owner_id']),
-            file_name=Updater.get_photo_url(info).split('/')[-1],
+            dir_name="{}".format(info["owner_id"]),
+            file_name=Updater.get_photo_url(info).split("/")[-1],
             date_downloaded=datetime.datetime.now(),
-            owner_id=info['owner_id'],
-            date_added=datetime.datetime.fromtimestamp(int(info['date'])),
-            width=info.get('width', 0),
-            height=info.get('height', 0),
-            text=info['text'])
+            owner_id=info["owner_id"],
+            date_added=datetime.datetime.fromtimestamp(int(info["date"])),
+            width=info.get("width", 0),
+            height=info.get("height", 0),
+            text=info["text"],
+        )
 
     def tag_people(self):
-        log.info('Start tag_people')
+        log.info("Start tag_people")
         session = self._session_factory.make_session()
         for user in session.query(User).order_by(User.date_added.desc()).all():
-            log.info(f'Tag photos of {user.first_name} {user.last_name}')
-            person_to_tag = session.query(User).filter(User.id == user.default_person_to_tag).all()
+            log.info(f"Tag photos of {user.first_name} {user.last_name}")
+            person_to_tag = (
+                session.query(User).filter(User.id == user.default_person_to_tag).all()
+            )
             author = session.query(User).filter(User.id == user.default_author).all()
             for photo in user.photos:
                 if person_to_tag:
@@ -163,44 +181,63 @@ class Updater:
         session.commit()
 
     async def add_new_photos(self, user, db_session):
-        log.info('Starting photos updating')
+        log.info("Starting photos updating")
 
-        pd_manager = PDManager(self._config.raw_data['api_clients'])
+        pd_manager = PDManager(self._config.raw_data["api_clients"])
 
         user.date_photos_updated = datetime.datetime.now()
         db_session.commit()
 
-        log.info('Filter by albums {}'.format(user.filter_by_albums))
+        log.info("Filter by albums {}".format(user.filter_by_albums))
 
         try:
             resp = []
-            log.debug('Analysing photos of {}'.format(user.url))
+            log.debug("Analysing photos of {}".format(user.url))
             try:
-                resp = await pd_manager.get_all_photos(user.id if user.kind == 0 else -user.id, user.filter_by_albums)
+                resp = await pd_manager.get_all_photos(
+                    user.id if user.kind == 0 else -user.id, user.filter_by_albums
+                )
             except Exception as ex:  # pylint: disable=broad-except
-                log.error('Can not get photos of {}. {}: {}'.format(user.url, type(ex), ex))
+                log.error(
+                    "Can not get photos of {}. {}: {}".format(user.url, type(ex), ex)
+                )
                 return
 
             # json.dump(resp, open('/tmp/resp.json', 'w'))
 
-            new_photo_ids = set(map(lambda info: info['id'], resp)) - set(
-                map(lambda photo: photo.origin_id, user.photos))
+            new_photo_ids = set(map(lambda info: info["id"], resp)) - set(
+                map(lambda photo: photo.origin_id, user.photos)
+            )
             new_photos = list(
-                map(Updater.photo_from_json, filter(lambda ph_info: ph_info['id'] in new_photo_ids, resp)))
+                map(
+                    Updater.photo_from_json,
+                    filter(lambda ph_info: ph_info["id"] in new_photo_ids, resp),
+                )
+            )
             new_photos_count = len(new_photos)
-            log.info('New photos: {}'.format(new_photos_count))
+            log.info("New photos: {}".format(new_photos_count))
             downloaded = 0
             for new_photo in new_photos:
                 new_photo.owner_id = user.id
                 downloaded += 1
-                log.info('Downloading photo {} of {}'.format(downloaded, new_photos_count))
+                log.info(
+                    "Downloading photo {} of {}".format(downloaded, new_photos_count)
+                )
                 await self.download_photo(new_photo, new_photo.url)
                 if new_photo.width == 0:
                     new_photo.width, new_photo.height = self.get_photo_size(new_photo)
                 if user.default_person_to_tag is not None:
-                    new_photo.people = [db_session.query(User).filter(User.id == user.default_person_to_tag).one()]
+                    new_photo.people = [
+                        db_session.query(User)
+                        .filter(User.id == user.default_person_to_tag)
+                        .one()
+                    ]
                 if user.default_author is not None:
-                    new_photo.authors = [db_session.query(User).filter(User.id == user.default_author).one()]
+                    new_photo.authors = [
+                        db_session.query(User)
+                        .filter(User.id == user.default_author)
+                        .one()
+                    ]
                 db_session.add(new_photo)
                 if downloaded % 100 == 0:
                     db_session.commit()
@@ -216,8 +253,8 @@ class Updater:
                     #     log.error('Exception: {}'.format(ex))
 
         except Exception as ex:  # pylint: disable=broad-except
-            log.error('Error while processing new photos {}'.format(ex))
+            log.error("Error while processing new photos {}".format(ex))
 
         user.date_photos_updated_successfully = datetime.datetime.now()
         db_session.commit()
-        log.info('Photos updating done')
+        log.info("Photos updating done")

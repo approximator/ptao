@@ -30,8 +30,8 @@ class PeopleTagRequest:
     photos: List[int]
     people: List[int]
     authors: List[int]
-    overwrite_people_tags: bool = field(metadata={'required': False}, default=False)
-    overwrite_authors_tags: bool = field(metadata={'required': False}, default=False)
+    overwrite_people_tags: bool = field(metadata={"required": False}, default=False)
+    overwrite_authors_tags: bool = field(metadata={"required": False}, default=False)
     Schema: ClassVar[Type[Schema]] = Schema
 
 
@@ -49,25 +49,21 @@ class ApiResult:
 
 
 class TagSchema(ModelSchema):
-
     class Meta:
         model = Tag
 
 
 class AlbumSchema(ModelSchema):
-
     class Meta:
         model = Album
 
 
 class UserSchema(ModelSchema):
-
     class Meta:
         model = User
 
 
 class PhotoSchema(ModelSchema):
-
     class Meta:
         model = Photo
 

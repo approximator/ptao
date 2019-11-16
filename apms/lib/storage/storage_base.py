@@ -14,7 +14,7 @@ class StorageBase:
     """
 
     def __init__(self):
-        self._current_dir = ''
+        self._current_dir = ""
 
     def cd(self, dir_name):  # pylint: disable=invalid-name
         """Change directory"""
@@ -28,9 +28,9 @@ class StorageBase:
     @staticmethod
     def is_absolute(path):
         """Check if path is absolute"""
-        return path.startswith('/')
+        return path.startswith("/")
 
     def get_absolute_path(self, path):
         """Get absolute path for any give path"""
-        abs_path = path if self.is_absolute(path) else self.cwd.rstrip('/') + '/' + path
-        return abs_path.lstrip('/')
+        abs_path = path if self.is_absolute(path) else self.cwd.rstrip("/") + "/" + path
+        return abs_path.lstrip("/")

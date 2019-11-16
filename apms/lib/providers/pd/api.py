@@ -30,13 +30,15 @@ class PDMethod:  # pylint: disable=too-few-public-methods
         self._common_arguments = common_arguments
 
     def __getattr__(self, item):
-        return PDMethod('{}.{}'.format(self._name, item), self._base, **self._common_arguments)
+        return PDMethod(
+            "{}.{}".format(self._name, item), self._base, **self._common_arguments
+        )
 
     async def __call__(self, **method_args):
         async with aiohttp.ClientSession() as session:
             async with session.get(
-                    '{}/{}'.format(self._base, self._name), params={
-                        **method_args,
-                        **self._common_arguments
-                    }, timeout=5) as resp:
+                "{}/{}".format(self._base, self._name),
+                params={**method_args, **self._common_arguments},
+                timeout=5,
+            ) as resp:
                 return await resp.json()
