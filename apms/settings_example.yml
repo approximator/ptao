@@ -1,6 +1,11 @@
 
 server:
-    static_dir: 'static'
+    db_connection_string: ''
+    static_dir: 'files'
+    photos_dir: 'photos'
+
+updater:
+    pause: true
 
 storage:
     storage_type: '',
@@ -20,26 +25,6 @@ api_clients:
     user_info_fields:
         - first_name
         - last_name
-        - verified
-        - sex
-        - bdate
-        - city
-        - country
-        - home_town
-        - has_photo
-        - photo_max_orig
-        - domain
-        - has_mobile
-        - contacts
-        - site
-        - status
-        - nickname
-        - about
 
     group_info_fields:
         - city
-        - contacts
-        - counters
-        - country
-        - description
-        - main_album_id

@@ -13,7 +13,7 @@ class MainHandler(RequestHandler):
     Returns the specified static file
     """
 
-    def get(self, file_name='index.html'):  # pylint: disable=arguments-differ
+    def get(self, file_name="index.html"):  # pylint: disable=arguments-differ
         """Get specified file
         ---
         summary: Get file from static directory
@@ -32,5 +32,5 @@ class MainHandler(RequestHandler):
           404:
             description: Not found
         """
-        log.debug('MainHandler {}'.format(file_name))
+        log.debug("MainHandler {}".format(file_name))
         self.write(open(os.path.join(config.static_dir, file_name)).read())

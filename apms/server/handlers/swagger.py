@@ -21,5 +21,5 @@ class SwaggerSpecHandler(RequestHandler):
         """
         Handler for /swagger/main.yml
         """
-        self.set_header('Content-Type', 'application/json')
+        self.set_header("Content-Type", "application/json")
         self.write(json.dumps(self._spec.to_dict()))

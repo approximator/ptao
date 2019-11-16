@@ -17,14 +17,16 @@ limitations under the License.
 """
 import os
 import logging
+from pathlib import Path
 
 import yaml
 
-log = logging.getLogger('apms-config')  # pylint: disable=invalid-name
+log = logging.getLogger("apms-config")  # pylint: disable=invalid-name
 logging.basicConfig(
-    format='%(asctime)s.%(msecs)-3d %(levelname)-8s [%(filename)s:%(lineno)d] %(message)s',
-    datefmt='%d-%m-%Y:%H:%M:%S',
-    level='INFO')
+    format="%(asctime)s.%(msecs)-3d %(levelname)-8s [%(filename)s:%(lineno)d] %(message)s",
+    datefmt="%d-%m-%Y:%H:%M:%S",
+    level="INFO",
+)
 
 
 class AmpsConfig:
@@ -41,19 +43,23 @@ class AmpsConfig:
 
     @staticmethod
     def default_config_file():
-        apms_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
-        return os.path.join(apms_dir, 'config.yml')
+        apms_dir = Path(__file__).resolve().parent.parent.parent
+        return apms_dir / "config.yml"
 
     def load_config(self, config_file):
-        apms_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
-        log.info('Loading config from {}'.format(config_file))
-        self._config = yaml.load(open(config_file, 'r'))
+        apms_dir = Path(__file__).resolve().parent.parent.parent
+        log.info(f"Loading config from {config_file}")
+        self._config = yaml.load(open(config_file, "r"))
 
-        self._static_dir = os.path.realpath(os.path.join(apms_dir, self._config['server']['static_dir']))
-        self._photos_dir = os.path.realpath(os.path.join(apms_dir, self._config['server']['photos_dir']))
-        self._db_connection_string = self._config['server']['db_connection_string']
-        log.info('Static dir: {}'.format(self._static_dir))
-        log.info('Photos dir: {}'.format(self._photos_dir))
+        self._static_dir = Path(
+            apms_dir / self._config["server"]["static_dir"]
+        ).resolve()
+        self._photos_dir = Path(
+            apms_dir / self._config["server"]["photos_dir"]
+        ).resolve()
+        self._db_connection_string = self._config["server"]["db_connection_string"]
+        log.info(f"Static dir: {self._static_dir}")
+        log.info(f"Photos dir: {self._photos_dir}")
 
     @property
     def raw_data(self):
@@ -69,7 +75,7 @@ class AmpsConfig:
 
     @property
     def trash_dir(self):
-        return '/tmp/apms/photos_to_delete'
+        return "/tmp/apms/photos_to_delete"
 
     @property
     def db_connection_string(self):
