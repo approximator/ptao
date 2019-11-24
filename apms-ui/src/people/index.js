@@ -91,7 +91,4 @@ function mapStateToProps(state) {
     return { users: state.userReducer.users };
 }
 
-export default connect(
-    mapStateToProps,
-    { fetchUsers, pauseUpdate, userInfoOpen }
-)(PeoplePage);
+export default connect(mapStateToProps, { fetchUsers, pauseUpdate, userInfoOpen })(PeoplePage);

@@ -15,6 +15,7 @@ export const LIGHTBOX_OPEN = 'LIGHTBOX_OPEN';
 export const LIGHTBOX_CLOSE = 'LIGHTBOX_CLOSE';
 export const LIGHTBOX_NEXT = 'LIGHTBOX_NEXT';
 export const LIGHTBOX_PREV = 'LIGHTBOX_PREV';
+export const DESELECT_ALL = 'DESELECT_ALL';
 
 export const SHIFT_DOWN = 'SHIFT_DOWN';
 export const SHIFT_UP = 'SHIFT_UP';

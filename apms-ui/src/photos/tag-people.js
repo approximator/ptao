@@ -150,7 +150,4 @@ function mapStateToProps(state) {
     };
 }
 
-export default connect(
-    mapStateToProps,
-    { tagPeopleDialogClose, saveUserTags, fetchUsers }
-)(TagPeopleDialog);
+export default connect(mapStateToProps, { tagPeopleDialogClose, saveUserTags, fetchUsers })(TagPeopleDialog);

@@ -104,7 +104,4 @@ function mapStateToProps(state) {
     };
 }
 
-export default connect(
-    mapStateToProps,
-    { userInfoClose, updateUserInfoDefaultPersons }
-)(UserInfo);
+export default connect(mapStateToProps, { userInfoClose, updateUserInfoDefaultPersons })(UserInfo);
