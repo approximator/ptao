@@ -6,8 +6,16 @@ import {
     LIGHTBOX_PREV,
     LIGHTBOX_NEXT,
     IMAGE_CLICK,
-    DELETE_PHOTOS
+    DELETE_PHOTOS,
+    DESELECT_ALL
 } from '../actions/types';
+
+export const deselectAll = () => dispatch => {
+    dispatch({
+        type: DESELECT_ALL,
+        payload: {}
+    });
+};
 
 export const lightboxOpen = imageIndex => dispatch => {
     dispatch({

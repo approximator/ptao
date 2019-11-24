@@ -8,7 +8,8 @@ import {
     LIGHTBOX_OPEN,
     SHIFT_DOWN,
     SHIFT_UP,
-    DELETE_PHOTOS
+    DELETE_PHOTOS,
+    DESELECT_ALL
 } from '../actions/types';
 
 const initialState = {
@@ -17,6 +18,7 @@ const initialState = {
     message: 'Initialization',
     keyboard: {},
     photos: [],
+    selected_photos: 0,
     totalPhotosCount: 0,
     totalPages: 0,
     currentPage: 1,
@@ -130,16 +132,30 @@ export default function(state = initialState, action) {
             return {
                 ...state,
                 photos: photos,
+                selected_photos: photos.filter(photo => photo.selected === true).length,
                 currentImage: action.payload.index,
                 lightboxIsOpen: lightboxIsOpen,
                 lastClickedImage: lastClickedImage,
                 selectionModeEnabled: selectionModeEnabled
             };
 
-        case DELETE_PHOTOS:
+        case DESELECT_ALL:
+            photos = state.photos.slice();
+            photos.forEach(ph => (ph.selected = false));
             return {
                 ...state,
-                photos: state.photos.filter(photo => !action.payload.deletedPphotos.includes(photo)),
+                photos: photos,
+                selected_photos: 0,
+                selectionModeEnabled: false,
+                lastClickedImage: undefined
+            };
+
+        case DELETE_PHOTOS:
+            photos = state.photos.filter(photo => !action.payload.deletedPphotos.includes(photo));
+            return {
+                ...state,
+                photos: photos,
+                selected_photos: photos.filter(photo => photo.selected === true).length,
                 selectionModeEnabled: false,
                 lastClickedImage: undefined
             };

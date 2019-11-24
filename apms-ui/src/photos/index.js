@@ -14,7 +14,8 @@ import {
     lightboxPrev,
     lightboxNext,
     imageClick,
-    deletePhotos
+    deletePhotos,
+    deselectAll
 } from '../actions/photosActions';
 import { tagPeopleDialogOpen } from '../actions/usersAction';
 import { shiftUp, shiftDown } from '../actions/keyboardActions';
@@ -113,29 +114,42 @@ class PhotosPage extends Component {
                         )}
                     </Sidebar.Pusher>
                 </Sidebar.Pushable>
-                <Menu className="secondaryTopMenu" fixed="bottom" inverted>
-                    <Pagination
-                        inverted
-                        // showEllipsis={false}
-                        // showFirstAndLastNav={false}
-                        boundaryRange={4}
-                        siblingRange={1}
-                        activePage={this.props.currentPage}
-                        onPageChange={this.onPaginationChange}
-                        totalPages={this.props.totalPages}
-                    />
+                <Menu fixed="bottom" inverted>
+                    <Menu.Menu>
+                        <Pagination
+                            inverted
+                            // showEllipsis={false}
+                            // showFirstAndLastNav={false}
+                            boundaryRange={4}
+                            siblingRange={1}
+                            activePage={this.props.currentPage}
+                            onPageChange={this.onPaginationChange}
+                            totalPages={this.props.totalPages}
+                        />
+                    </Menu.Menu>
 
-                    <UserInfo modalTrigger={<Button>New User</Button>} />
+                    {this.props.selected_photos > 0 && (
+                        <Menu.Menu position="right">
+                            <Menu.Item>
+                                <Button
+                                    compact
+                                    onClick={() => {
+                                        this.props.tagPeopleDialogOpen(
+                                            this.props.photos.filter(photo => photo.selected === true)
+                                        );
+                                    }}
+                                >
+                                    Tag People
+                                </Button>
+                                <Button
+                                    onClick={() => this.props.deselectAll()}
+                                >{`Deselect ${this.props.selected_photos}`}</Button>
+                            </Menu.Item>
+                        </Menu.Menu>
+                    )}
 
                     <TagPeopleDialog />
-                    <Button
-                        compact
-                        onClick={() => {
-                            this.props.tagPeopleDialogOpen(this.props.photos.filter(photo => photo.selected === true));
-                        }}
-                    >
-                        Tag People
-                    </Button>
+                    <UserInfo modalTrigger={<Button>New User</Button>} />
                 </Menu>
 
                 <KeyboardEventHandler
@@ -174,17 +188,15 @@ const mapStateToProps = state => {
     };
 };
 
-export default connect(
-    mapStateToProps,
-    {
-        fetchPhotos,
-        lightboxClose,
-        lightboxNext,
-        lightboxPrev,
-        imageClick,
-        shiftUp,
-        shiftDown,
-        deletePhotos,
-        tagPeopleDialogOpen
-    }
-)(PhotosPage);
+export default connect(mapStateToProps, {
+    fetchPhotos,
+    lightboxClose,
+    lightboxNext,
+    lightboxPrev,
+    imageClick,
+    shiftUp,
+    shiftDown,
+    deletePhotos,
+    tagPeopleDialogOpen,
+    deselectAll
+})(PhotosPage);
